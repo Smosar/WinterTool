@@ -328,7 +328,8 @@
     .map-item.is-selected .ice-roof,
     .map-item.is-selected .flag-cloth,
     .map-item.is-selected .pit-stone,
-    .map-item.is-selected .pit-ice {
+    .map-item.is-selected .pit-ice,
+    .map-item.is-selected .bear-face {
       stroke: #fff2a8;
       stroke-width: 5;
     }
@@ -383,17 +384,28 @@
     }
 
     .pit-stone {
-      fill: #d7e6ee;
-      stroke: #526477;
+      fill: #bfe6f8;
+      stroke: #36556b;
       stroke-width: 3;
       stroke-linejoin: round;
     }
 
     .pit-ice {
-      fill: #e8fbff;
-      stroke: #7ba8b8;
+      fill: #f0fdff;
+      stroke: #73abc1;
       stroke-width: 2;
       stroke-linejoin: round;
+    }
+
+    .bear-face {
+      fill: #f8fbff;
+      stroke: #36556b;
+      stroke-width: 3;
+    }
+
+    .bear-feature {
+      fill: #36556b;
+      stroke: none;
     }
 
     .spark {
@@ -983,24 +995,19 @@
       }
 
       function drawBearPitIcon(group) {
-        const stones = [
-          [-42, 10], [-30, -6], [-10, -14], [13, -14], [33, -4], [45, 12],
-          [37, 28], [15, 37], [-8, 38], [-31, 31], [-46, 24]
-        ];
-        group.append(createSvgElement("ellipse", { cx: 0, cy: 32, rx: 52, ry: 15, fill: "rgba(2, 16, 28, 0.36)" }));
-        stones.forEach(([x, y], i) => {
-          group.append(createSvgElement("ellipse", {
-            class: "pit-stone",
-            cx: x,
-            cy: y,
-            rx: 14 + (i % 3) * 2,
-            ry: 10 + (i % 2) * 2
-          }));
-        });
         group.append(
-          createSvgElement("path", { class: "pit-ice", d: "M -35 10 C -18 -8 19 -8 36 10 C 29 31 -24 33 -35 10 Z" }),
-          createSvgElement("path", { class: "ice-roof", d: "M -18 -2 L 0 -35 L 21 -2 L 9 11 L -10 11 Z" }),
-          createSvgElement("path", { class: "ice-body", d: "M -22 2 L -8 -15 L 10 -15 L 23 4 L 15 19 L -16 19 Z" })
+          createSvgElement("ellipse", { cx: 0, cy: 34, rx: 54, ry: 15, fill: "rgba(2, 16, 28, 0.34)" }),
+          createSvgElement("path", { class: "pit-stone", d: "M -55 4 C -42 -18 -20 -28 4 -26 C 29 -25 49 -13 58 9 C 47 31 24 43 -4 43 C -31 43 -50 28 -55 4 Z" }),
+          createSvgElement("path", { class: "pit-ice", d: "M -38 5 C -25 -9 -4 -14 17 -9 C 35 -4 45 9 40 21 C 28 35 -20 36 -38 20 C -44 15 -44 9 -38 5 Z" }),
+          createSvgElement("circle", { class: "bear-face", cx: -22, cy: -12, r: 13 }),
+          createSvgElement("circle", { class: "bear-face", cx: 22, cy: -12, r: 13 }),
+          createSvgElement("circle", { class: "bear-face", cx: 0, cy: -2, r: 30 }),
+          createSvgElement("circle", { class: "bear-feature", cx: -10, cy: -7, r: 3.5 }),
+          createSvgElement("circle", { class: "bear-feature", cx: 10, cy: -7, r: 3.5 }),
+          createSvgElement("ellipse", { class: "bear-feature", cx: 0, cy: 2, rx: 5, ry: 4 }),
+          createSvgElement("path", { d: "M -8 12 Q 0 18 8 12", fill: "none", stroke: "#36556b", "stroke-width": 3, "stroke-linecap": "round" }),
+          createSvgElement("path", { d: "M -28 27 L -14 17 L -5 27 Z", fill: "#d9f7ff", stroke: "#73abc1", "stroke-width": 2, "stroke-linejoin": "round" }),
+          createSvgElement("path", { d: "M 18 28 L 33 16 L 41 29 Z", fill: "#d9f7ff", stroke: "#73abc1", "stroke-width": 2, "stroke-linejoin": "round" })
         );
       }
 
