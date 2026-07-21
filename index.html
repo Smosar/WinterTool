@@ -1044,7 +1044,6 @@
         } else {
           placed.push(item);
         }
-        renderPlaced();
         return true;
       }
 
@@ -1146,6 +1145,7 @@
           pendingMoveIndex = null;
           dragMode = "none";
           if (ok) {
+            renderPlaced();
             setPlacing(false);
           } else {
             renderPlaced();
