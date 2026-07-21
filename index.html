@@ -492,7 +492,7 @@
         <button class="btn" id="gridBtn" type="button">显示格子</button>
         <button class="btn" id="footprintBtn" type="button">隐藏占格</button>
         <button class="btn danger" id="clearBtn" type="button">清空</button>
-        <div class="status" id="status">已放置 <span class="badge" id="count">0</span> 个元素</div>
+        <div class="status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
       </div>
     </header>
 
@@ -803,13 +803,15 @@
       }
 
       function updateStatus() {
+        const total = placed.length;
+        const furnaceCount = placed.filter((item) => item.type === "furnace").length;
+        const flagCount = placed.filter((item) => item.type === "flag").length;
+        const stats = `总数 <span class="badge">${total}</span> 炉子 <span class="badge">${furnaceCount}</span> 旗子 <span class="badge">${flagCount}</span>`;
         if (placing && currentCandidate) {
           const ignoreCells = ignoredCellsFor(draggingIndex);
-          status.innerHTML = candidateIsValid(currentCandidate, ignoreCells)
-            ? `当前位置可放置，已放置 <span class="badge" id="count">${placed.length}</span> 个元素`
-            : `当前位置不可放置，已放置 <span class="badge" id="count">${placed.length}</span> 个元素`;
+          status.innerHTML = `${candidateIsValid(currentCandidate, ignoreCells) ? "当前位置可放置" : "当前位置不可放置"}，${stats}`;
         } else {
-          status.innerHTML = `已放置 <span class="badge" id="count">${placed.length}</span> 个元素`;
+          status.innerHTML = stats;
         }
       }
 
