@@ -15,9 +15,9 @@
       --bad: rgba(255, 87, 87, 0.6);
       --cyan: #4fdaf7;
       --shadow: 0 18px 55px rgba(0, 0, 0, 0.35);
-      --range-blue: rgba(50, 205, 255, 0.22);
-      --range-gold: rgba(255, 202, 80, 0.24);
-      --range-purple: rgba(176, 116, 255, 0.24);
+      --range-blue: rgb(50, 205, 255);
+      --range-gold: rgb(255, 202, 80);
+      --range-purple: rgb(176, 116, 255);
     }
 
     * {
@@ -252,6 +252,7 @@
       stroke: rgba(255, 255, 255, 0.46);
       vector-effect: non-scaling-stroke;
       pointer-events: none;
+      fill-opacity: 0.22;
     }
 
     .range.blue {
@@ -475,7 +476,7 @@
     <header class="toolbar">
       <div class="brand">
         <strong>无尽冬日地图工具</strong>
-        <span>地图范围 1200×1200，所有建筑占格不能重叠</span>
+        <span>地图范围 500×500，默认视野 50×50，所有建筑占格不能重叠</span>
       </div>
       <div class="actions" aria-label="地图操作">
         <div class="tool-group" aria-label="可放置元素">
@@ -534,14 +535,15 @@
 
   <script>
     (() => {
-      const mapSize = 1200;
+      const mapSize = 500;
+      const initialViewSize = 50;
       const cell = 24;
       const angleX = -21 * Math.PI / 180;
       const angleY = 61 * Math.PI / 180;
       const vx = { x: Math.cos(angleX) * cell, y: Math.sin(angleX) * cell };
       const vy = { x: Math.cos(angleY) * cell, y: Math.sin(angleY) * cell };
       const minZoom = 1;
-      const maxZoom = 90;
+      const maxZoom = mapSize / initialViewSize;
 
       const ELEMENTS = {
         furnace: { label: "炉子", w: 2, h: 2, icon: "furnace", yOffset: -19, scale: 0.68 },
@@ -577,8 +579,8 @@
       const occupied = new Map();
       const mapCorners = [point(0, 0), point(mapSize, 0), point(mapSize, mapSize), point(0, mapSize)];
       const baseViewBox = boundsForPoints(mapCorners, cell * 10);
-      let viewBox = { ...baseViewBox };
-      let zoom = 1;
+      let viewBox = initialViewBox();
+      let zoom = maxZoom;
       let gridVisible = false;
       let footprintsVisible = true;
       let activeType = "furnace";
@@ -608,6 +610,13 @@
         const maxX = Math.max(...xs) + padding;
         const maxY = Math.max(...ys) + padding;
         return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+      }
+
+      function initialViewBox() {
+        const center = point(mapSize / 2, mapSize / 2);
+        const w = baseViewBox.w / maxZoom;
+        const h = baseViewBox.h / maxZoom;
+        return { x: center.x - w / 2, y: center.y - h / 2, w, h };
       }
 
       function polygonPoints(points) {
@@ -735,8 +744,8 @@
       }
 
       function resetZoom() {
-        zoom = 1;
-        viewBox = { ...baseViewBox };
+        zoom = maxZoom;
+        viewBox = initialViewBox();
         applyViewBox();
       }
 
@@ -912,14 +921,42 @@
         );
       }
 
-      function rangePolygon(item) {
+      function rangePathData(item) {
         if (item.type !== "flag") return null;
         const range = rangeBoundsForFlag(item);
         if (range.w <= 0 || range.h <= 0) return null;
-        return createSvgElement("polygon", {
+        const corners = [
+          point(range.gx, range.gy),
+          point(range.gx + range.w, range.gy),
+          point(range.gx + range.w, range.gy + range.h),
+          point(range.gx, range.gy + range.h)
+        ];
+        return `M ${corners[0].x.toFixed(2)} ${corners[0].y.toFixed(2)} L ${corners[1].x.toFixed(2)} ${corners[1].y.toFixed(2)} L ${corners[2].x.toFixed(2)} ${corners[2].y.toFixed(2)} L ${corners[3].x.toFixed(2)} ${corners[3].y.toFixed(2)} Z`;
+      }
+
+      function rangePolygon(item) {
+        const d = rangePathData(item);
+        if (!d) return null;
+        return createSvgElement("path", {
           class: `range ${item.color || activeColor}`,
-          points: rectPolygon(range.gx, range.gy, range.w, range.h)
+          d
         });
+      }
+
+      function mergedRangeNodes(sourceItems) {
+        const pathsByColor = { blue: [], gold: [], purple: [] };
+        sourceItems.forEach((item) => {
+          if (item.type !== "flag") return;
+          const d = rangePathData(item);
+          if (!d) return;
+          pathsByColor[item.color || "blue"].push(d);
+        });
+        return Object.entries(pathsByColor)
+          .filter(([, paths]) => paths.length)
+          .map(([color, paths]) => createSvgElement("path", {
+            class: `range ${color}`,
+            d: paths.join(" ")
+          }));
       }
 
       function drawPreview(candidate) {
@@ -966,13 +1003,10 @@
 
       function renderPlaced() {
         rebuildOccupied();
-        const rangeNodes = [];
         const footprintNodes = [];
         const itemNodes = [];
         placed.forEach((item, index) => {
           const def = ELEMENTS[item.type];
-          const range = rangePolygon(item);
-          if (range && index !== draggingIndex) rangeNodes.push(range);
           if (index === draggingIndex) return;
           footprintNodes.push(createSvgElement("polygon", {
             class: "footprint",
@@ -980,7 +1014,7 @@
           }));
           itemNodes.push(iconGroup(item, "map-item", false, index));
         });
-        ranges.replaceChildren(...rangeNodes);
+        ranges.replaceChildren(...mergedRangeNodes(placed.filter((_, index) => index !== draggingIndex)));
         footprints.replaceChildren(...footprintNodes);
         items.replaceChildren(...itemNodes);
         updateStatus();
