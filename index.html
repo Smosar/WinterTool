@@ -159,6 +159,22 @@
       background: #b074ff;
     }
 
+    .text-control {
+      width: 9rem;
+      min-height: 2.35rem;
+      border: 1px solid rgba(115, 211, 255, 0.24);
+      border-radius: 0.5rem;
+      color: var(--text);
+      background: rgba(7, 20, 36, 0.7);
+      padding: 0.48rem 0.65rem;
+      outline: none;
+    }
+
+    .text-control:focus {
+      border-color: rgba(117, 236, 255, 0.72);
+      box-shadow: 0 0 0 3px rgba(79, 218, 247, 0.18);
+    }
+
     .status {
       min-width: min(100%, 17rem);
       color: var(--muted);
@@ -326,10 +342,16 @@
       stroke-linejoin: round;
     }
 
-    .furnace-core {
-      fill: #e23527;
-      stroke: #ffd86d;
-      stroke-width: 4;
+    .item-label {
+      fill: #eafaff;
+      font-size: 16px;
+      font-weight: 500;
+      text-anchor: middle;
+      paint-order: stroke;
+      stroke: rgba(3, 18, 31, 0.78);
+      stroke-width: 5;
+      dominant-baseline: hanging;
+      pointer-events: none;
     }
 
     .flag-pole {
@@ -489,6 +511,7 @@
           <button class="btn swatch" data-color="gold" type="button" aria-label="黄色范围"></button>
           <button class="btn swatch" data-color="purple" type="button" aria-label="紫色范围"></button>
         </div>
+        <input class="text-control" id="furnaceLabelInput" type="text" maxlength="8" placeholder="炉子文字" aria-label="炉子底部文字">
         <button class="btn" id="gridBtn" type="button">显示格子</button>
         <button class="btn" id="footprintBtn" type="button">隐藏占格</button>
         <button class="btn danger" id="clearBtn" type="button">清空</button>
@@ -566,6 +589,7 @@
       const previewItem = document.getElementById("previewItem");
       const elementButtons = Array.from(document.querySelectorAll(".element-btn"));
       const colorButtons = Array.from(document.querySelectorAll(".swatch"));
+      const furnaceLabelInput = document.getElementById("furnaceLabelInput");
       const gridBtn = document.getElementById("gridBtn");
       const footprintBtn = document.getElementById("footprintBtn");
       const clearBtn = document.getElementById("clearBtn");
@@ -877,13 +901,13 @@
           transform: `translate(${center.x.toFixed(2)} ${(center.y + def.yOffset).toFixed(2)}) scale(${def.scale})`
         });
         if (index !== null) group.dataset.index = String(index);
-        if (def.icon === "furnace") drawFurnaceIcon(group);
+        if (def.icon === "furnace") drawFurnaceIcon(group, item.label);
         if (def.icon === "flag") drawFlagIcon(group);
         if (def.icon === "bearPit") drawBearPitIcon(group);
         return group;
       }
 
-      function drawFurnaceIcon(group) {
+      function drawFurnaceIcon(group, label = "") {
         group.append(
           createSvgElement("ellipse", { cx: 0, cy: 31, rx: 34, ry: 11, fill: "rgba(2, 16, 28, 0.42)" }),
           createSvgElement("path", { class: "ice-roof", d: "M 11 -30 L 21 -24 L 19 -8 L 9 -12 Z" }),
@@ -891,9 +915,13 @@
           createSvgElement("path", { class: "ice-roof", d: "M -22 -15 L 0 -35 L 24 -15 L 13 1 L -12 1 Z" }),
           createSvgElement("circle", { class: "spark", cx: -14, cy: -7, r: 4 }),
           createSvgElement("circle", { class: "spark", cx: 17, cy: -2, r: 3 }),
-          createSvgElement("circle", { class: "spark", cx: 3, cy: -21, r: 3.5 }),
-          createSvgElement("circle", { class: "furnace-core", cx: 0, cy: 12, r: 16 })
+          createSvgElement("circle", { class: "spark", cx: 3, cy: -21, r: 3.5 })
         );
+        if (label) {
+          const text = createSvgElement("text", { class: "item-label", x: 0, y: 37 });
+          text.textContent = label;
+          group.append(text);
+        }
       }
 
       function drawFlagIcon(group) {
@@ -980,7 +1008,8 @@
           type: candidate.type,
           gx: candidate.gx,
           gy: candidate.gy,
-          color: movingItem && movingItem.type === "flag" ? movingItem.color : activeColor
+          color: movingItem && movingItem.type === "flag" ? movingItem.color : activeColor,
+          label: movingItem && movingItem.type === "furnace" ? movingItem.label : furnaceLabelInput.value.trim()
         };
         const range = rangePolygon(item);
         if (range) previewRange.appendChild(range);
@@ -1036,10 +1065,12 @@
           type: candidate.type,
           gx: candidate.gx,
           gy: candidate.gy,
-          color: candidate.type === "flag" ? activeColor : undefined
+          color: candidate.type === "flag" ? activeColor : undefined,
+          label: candidate.type === "furnace" ? furnaceLabelInput.value.trim() : undefined
         };
         if (movingIndex !== null && placed[movingIndex]) {
           item.color = placed[movingIndex].type === "flag" ? (placed[movingIndex].color || activeColor) : item.color;
+          item.label = placed[movingIndex].type === "furnace" ? placed[movingIndex].label : item.label;
           placed[movingIndex] = item;
         } else {
           placed.push(item);
