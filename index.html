@@ -594,6 +594,7 @@
       let viewBoxStart = null;
       let dragMode = "none";
       let draggingIndex = null;
+      let pendingMoveIndex = null;
       let currentCandidate = null;
       let suppressNextMapClick = false;
 
@@ -784,6 +785,7 @@
         pointerDown = false;
         dragMode = "none";
         draggingIndex = null;
+        pendingMoveIndex = null;
         panning = false;
         mapShell.classList.remove("panning");
         currentCandidate = null;
@@ -1059,6 +1061,22 @@
       }
 
       function handlePointerMove(event) {
+        if (dragMode === "pending-move" && pendingMoveIndex !== null) {
+          const dx = event.clientX - panStart.x;
+          const dy = event.clientY - panStart.y;
+          if (Math.hypot(dx, dy) < 4) return;
+          event.preventDefault();
+          draggingIndex = pendingMoveIndex;
+          pendingMoveIndex = null;
+          dragMode = "move";
+          setGridVisible(true);
+          renderPlaced();
+          drawPreview(candidateFromPointer(event, placed[draggingIndex].type));
+          hint.textContent = "正在移动已放置的元素：绿色区域可放，红色区域不可放。";
+          suppressNextMapClick = true;
+          return;
+        }
+
         if (dragMode === "pan" && panning) {
           event.preventDefault();
           panTo(event);
@@ -1079,13 +1097,9 @@
         mapShell.setPointerCapture(event.pointerId);
 
         if (itemEl) {
-          draggingIndex = Number(itemEl.dataset.index);
-          dragMode = "move";
-          setGridVisible(true);
-          renderPlaced();
-          drawPreview(candidateFromPointer(event, placed[draggingIndex].type));
-          hint.textContent = "正在移动已放置的元素：绿色区域可放，红色区域不可放。";
-          suppressNextMapClick = true;
+          pendingMoveIndex = Number(itemEl.dataset.index);
+          dragMode = "pending-move";
+          panStart = { x: event.clientX, y: event.clientY };
           return;
         }
 
@@ -1114,6 +1128,12 @@
           return;
         }
 
+        if (dragMode === "pending-move") {
+          pendingMoveIndex = null;
+          dragMode = "none";
+          return;
+        }
+
         if (dragMode === "place" || dragMode === "move") {
           const movingIndex = dragMode === "move" ? draggingIndex : null;
           const type = movingIndex !== null && placed[movingIndex] ? placed[movingIndex].type : activeType;
@@ -1121,6 +1141,7 @@
           drawPreview(candidate);
           const ok = placeAt(candidate, movingIndex);
           draggingIndex = null;
+          pendingMoveIndex = null;
           dragMode = "none";
           if (ok) {
             setPlacing(false);
@@ -1150,6 +1171,7 @@
         panning = false;
         dragMode = "none";
         draggingIndex = null;
+        pendingMoveIndex = null;
         mapShell.classList.remove("panning");
         renderPlaced();
       });
