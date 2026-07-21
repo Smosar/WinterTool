@@ -476,7 +476,7 @@
     <header class="toolbar">
       <div class="brand">
         <strong>无尽冬日地图工具</strong>
-        <span>地图范围 500×500，默认视野 50×50，所有建筑占格不能重叠</span>
+        <span>地图范围 300×300，默认视野 20×20，最大放大至 5×5</span>
       </div>
       <div class="actions" aria-label="地图操作">
         <div class="tool-group" aria-label="可放置元素">
@@ -535,15 +535,17 @@
 
   <script>
     (() => {
-      const mapSize = 500;
-      const initialViewSize = 50;
+      const mapSize = 300;
+      const initialViewSize = 20;
+      const maxZoomViewSize = 5;
       const cell = 24;
       const angleX = -21 * Math.PI / 180;
       const angleY = 61 * Math.PI / 180;
       const vx = { x: Math.cos(angleX) * cell, y: Math.sin(angleX) * cell };
       const vy = { x: Math.cos(angleY) * cell, y: Math.sin(angleY) * cell };
       const minZoom = 1;
-      const maxZoom = mapSize / initialViewSize;
+      const initialZoom = mapSize / initialViewSize;
+      const maxZoom = mapSize / maxZoomViewSize;
 
       const ELEMENTS = {
         furnace: { label: "炉子", w: 2, h: 2, icon: "furnace", yOffset: -19, scale: 0.68 },
@@ -580,7 +582,7 @@
       const mapCorners = [point(0, 0), point(mapSize, 0), point(mapSize, mapSize), point(0, mapSize)];
       const baseViewBox = boundsForPoints(mapCorners, cell * 10);
       let viewBox = initialViewBox();
-      let zoom = maxZoom;
+      let zoom = initialZoom;
       let gridVisible = false;
       let footprintsVisible = true;
       let activeType = "furnace";
@@ -614,8 +616,8 @@
 
       function initialViewBox() {
         const center = point(mapSize / 2, mapSize / 2);
-        const w = baseViewBox.w / maxZoom;
-        const h = baseViewBox.h / maxZoom;
+        const w = baseViewBox.w / initialZoom;
+        const h = baseViewBox.h / initialZoom;
         return { x: center.x - w / 2, y: center.y - h / 2, w, h };
       }
 
@@ -744,7 +746,7 @@
       }
 
       function resetZoom() {
-        zoom = maxZoom;
+        zoom = initialZoom;
         viewBox = initialViewBox();
         applyViewBox();
       }
@@ -1122,10 +1124,8 @@
           dragMode = "none";
           if (ok) {
             setPlacing(false);
-            setGridVisible(false);
           } else {
             renderPlaced();
-            setGridVisible(false);
             previewCells.replaceChildren();
             previewItem.replaceChildren();
             previewRange.replaceChildren();
