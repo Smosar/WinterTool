@@ -122,6 +122,12 @@
       background: rgba(70, 31, 40, 0.88);
     }
 
+    .btn:disabled {
+      opacity: 0.46;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
     .tool-group {
       display: inline-flex;
       align-items: center;
@@ -319,7 +325,10 @@
     }
 
     .map-item.is-selected .ice-body,
-    .map-item.is-selected .ice-roof {
+    .map-item.is-selected .ice-roof,
+    .map-item.is-selected .flag-cloth,
+    .map-item.is-selected .pit-stone,
+    .map-item.is-selected .pit-ice {
       stroke: #fff2a8;
       stroke-width: 5;
     }
@@ -520,6 +529,7 @@
         <input class="text-control" id="furnaceLabelInput" type="text" maxlength="8" placeholder="炉子文字" aria-label="炉子底部文字">
         <button class="btn" id="gridBtn" type="button">显示格子</button>
         <button class="btn" id="footprintBtn" type="button">隐藏占格</button>
+        <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
         <button class="btn danger" id="clearBtn" type="button">清空</button>
         <div class="status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
       </div>
@@ -598,6 +608,7 @@
       const furnaceLabelInput = document.getElementById("furnaceLabelInput");
       const gridBtn = document.getElementById("gridBtn");
       const footprintBtn = document.getElementById("footprintBtn");
+      const deleteSelectedBtn = document.getElementById("deleteSelectedBtn");
       const clearBtn = document.getElementById("clearBtn");
       const zoomOutBtn = document.getElementById("zoomOutBtn");
       const zoomInBtn = document.getElementById("zoomInBtn");
@@ -625,6 +636,7 @@
       let dragMode = "none";
       let draggingIndex = null;
       let pendingMoveIndex = null;
+      let selectedIndex = null;
       let selectedFurnaceIndex = null;
       let currentCandidate = null;
       let suppressNextMapClick = false;
@@ -797,7 +809,7 @@
 
       function setActiveType(type) {
         activeType = type;
-        selectedFurnaceIndex = null;
+        clearSelection(false);
         elementButtons.forEach((btn) => {
           btn.classList.toggle("primary", btn.dataset.type === type);
         });
@@ -812,12 +824,41 @@
         if (placing && activeType === "flag") drawPreview(candidateAtViewCenter("flag"));
       }
 
+      function updateSelectionControls() {
+        deleteSelectedBtn.disabled = selectedIndex === null || !placed[selectedIndex];
+      }
+
+      function clearSelection(shouldRender = true) {
+        selectedIndex = null;
+        selectedFurnaceIndex = null;
+        updateSelectionControls();
+        if (shouldRender) renderPlaced();
+      }
+
+      function selectPlacedItem(index) {
+        selectedIndex = index;
+        selectedFurnaceIndex = placed[index]?.type === "furnace" ? index : null;
+        if (selectedFurnaceIndex !== null) {
+          furnaceLabelInput.value = placed[index].label || "";
+          furnaceLabelInput.focus();
+          furnaceLabelInput.select();
+          hint.textContent = "已选中炉子，可以修改文字，或点击“删除选中”。";
+        } else {
+          hint.textContent = "已选中建筑，点击“删除选中”可清掉它。";
+        }
+        updateSelectionControls();
+        renderPlaced();
+      }
+
       function setPlacing(next) {
         placing = next;
         pointerDown = false;
         dragMode = "none";
         draggingIndex = null;
         pendingMoveIndex = null;
+        selectedIndex = null;
+        selectedFurnaceIndex = null;
+        updateSelectionControls();
         panning = false;
         mapShell.classList.remove("panning");
         currentCandidate = null;
@@ -905,7 +946,7 @@
         const def = ELEMENTS[item.type];
         const center = centerOf(item.gx, item.gy, def.w, def.h);
         const group = createSvgElement("g", {
-          class: `${className}${invalid ? " invalid" : ""}${index !== null && index === selectedFurnaceIndex ? " is-selected" : ""}`,
+          class: `${className}${invalid ? " invalid" : ""}${index !== null && index === selectedIndex ? " is-selected" : ""}`,
           transform: `translate(${center.x.toFixed(2)} ${(center.y + def.yOffset).toFixed(2)}) scale(${def.scale})`
         });
         if (index !== null) group.dataset.index = String(index);
@@ -1080,11 +1121,14 @@
           item.color = placed[movingIndex].type === "flag" ? (placed[movingIndex].color || activeColor) : item.color;
           item.label = placed[movingIndex].type === "furnace" ? placed[movingIndex].label : item.label;
           placed[movingIndex] = item;
+          selectedIndex = movingIndex;
           selectedFurnaceIndex = item.type === "furnace" ? movingIndex : null;
         } else {
           placed.push(item);
+          selectedIndex = placed.length - 1;
           selectedFurnaceIndex = item.type === "furnace" ? placed.length - 1 : null;
         }
+        updateSelectionControls();
         return true;
       }
 
@@ -1110,7 +1154,9 @@
           event.preventDefault();
           draggingIndex = pendingMoveIndex;
           pendingMoveIndex = null;
+          selectedIndex = null;
           selectedFurnaceIndex = null;
+          updateSelectionControls();
           dragMode = "move";
           setGridVisible(true);
           renderPlaced();
@@ -1175,17 +1221,7 @@
           const index = pendingMoveIndex;
           pendingMoveIndex = null;
           dragMode = "none";
-          if (index !== null && placed[index]?.type === "furnace") {
-            selectedFurnaceIndex = index;
-            furnaceLabelInput.value = placed[index].label || "";
-            renderPlaced();
-            furnaceLabelInput.focus();
-            furnaceLabelInput.select();
-            hint.textContent = "已选中炉子，可以在顶部输入框修改底部文字。";
-          } else {
-            selectedFurnaceIndex = null;
-            renderPlaced();
-          }
+          if (index !== null && placed[index]) selectPlacedItem(index);
           return;
         }
 
@@ -1216,6 +1252,7 @@
           return;
         }
         if (placing || event.target.closest("button")) return;
+        if (!event.target.closest(".map-item")) clearSelection();
         setGridVisible(!gridVisible);
       });
 
@@ -1253,6 +1290,20 @@
         }
       });
 
+      deleteSelectedBtn.addEventListener("click", () => {
+        if (selectedIndex === null || !placed[selectedIndex]) return;
+        const removed = placed[selectedIndex];
+        placed.splice(selectedIndex, 1);
+        selectedIndex = null;
+        selectedFurnaceIndex = null;
+        updateSelectionControls();
+        renderPlaced();
+        previewCells.replaceChildren();
+        previewItem.replaceChildren();
+        previewRange.replaceChildren();
+        hint.textContent = `已删除${ELEMENTS[removed.type].label}。`;
+      });
+
       gridBtn.addEventListener("click", () => {
         if (!placing) setGridVisible(!gridVisible);
       });
@@ -1263,7 +1314,9 @@
 
       clearBtn.addEventListener("click", () => {
         placed.splice(0, placed.length);
+        selectedIndex = null;
         selectedFurnaceIndex = null;
+        updateSelectionControls();
         renderPlaced();
         previewCells.replaceChildren();
         previewItem.replaceChildren();
