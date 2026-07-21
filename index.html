@@ -318,6 +318,12 @@
       cursor: grabbing;
     }
 
+    .map-item.is-selected .ice-body,
+    .map-item.is-selected .ice-roof {
+      stroke: #fff2a8;
+      stroke-width: 5;
+    }
+
     .preview-item {
       opacity: 0.9;
       pointer-events: none;
@@ -619,6 +625,7 @@
       let dragMode = "none";
       let draggingIndex = null;
       let pendingMoveIndex = null;
+      let selectedFurnaceIndex = null;
       let currentCandidate = null;
       let suppressNextMapClick = false;
 
@@ -790,6 +797,7 @@
 
       function setActiveType(type) {
         activeType = type;
+        selectedFurnaceIndex = null;
         elementButtons.forEach((btn) => {
           btn.classList.toggle("primary", btn.dataset.type === type);
         });
@@ -897,7 +905,7 @@
         const def = ELEMENTS[item.type];
         const center = centerOf(item.gx, item.gy, def.w, def.h);
         const group = createSvgElement("g", {
-          class: `${className}${invalid ? " invalid" : ""}`,
+          class: `${className}${invalid ? " invalid" : ""}${index !== null && index === selectedFurnaceIndex ? " is-selected" : ""}`,
           transform: `translate(${center.x.toFixed(2)} ${(center.y + def.yOffset).toFixed(2)}) scale(${def.scale})`
         });
         if (index !== null) group.dataset.index = String(index);
@@ -1072,8 +1080,10 @@
           item.color = placed[movingIndex].type === "flag" ? (placed[movingIndex].color || activeColor) : item.color;
           item.label = placed[movingIndex].type === "furnace" ? placed[movingIndex].label : item.label;
           placed[movingIndex] = item;
+          selectedFurnaceIndex = item.type === "furnace" ? movingIndex : null;
         } else {
           placed.push(item);
+          selectedFurnaceIndex = item.type === "furnace" ? placed.length - 1 : null;
         }
         return true;
       }
@@ -1100,6 +1110,7 @@
           event.preventDefault();
           draggingIndex = pendingMoveIndex;
           pendingMoveIndex = null;
+          selectedFurnaceIndex = null;
           dragMode = "move";
           setGridVisible(true);
           renderPlaced();
@@ -1161,8 +1172,20 @@
         }
 
         if (dragMode === "pending-move") {
+          const index = pendingMoveIndex;
           pendingMoveIndex = null;
           dragMode = "none";
+          if (index !== null && placed[index]?.type === "furnace") {
+            selectedFurnaceIndex = index;
+            furnaceLabelInput.value = placed[index].label || "";
+            renderPlaced();
+            furnaceLabelInput.focus();
+            furnaceLabelInput.select();
+            hint.textContent = "已选中炉子，可以在顶部输入框修改底部文字。";
+          } else {
+            selectedFurnaceIndex = null;
+            renderPlaced();
+          }
           return;
         }
 
@@ -1223,6 +1246,13 @@
         btn.addEventListener("click", () => setActiveColor(btn.dataset.color));
       });
 
+      furnaceLabelInput.addEventListener("input", () => {
+        if (selectedFurnaceIndex !== null && placed[selectedFurnaceIndex]?.type === "furnace") {
+          placed[selectedFurnaceIndex].label = furnaceLabelInput.value.trim();
+          renderPlaced();
+        }
+      });
+
       gridBtn.addEventListener("click", () => {
         if (!placing) setGridVisible(!gridVisible);
       });
@@ -1233,6 +1263,7 @@
 
       clearBtn.addEventListener("click", () => {
         placed.splice(0, placed.length);
+        selectedFurnaceIndex = null;
         renderPlaced();
         previewCells.replaceChildren();
         previewItem.replaceChildren();
