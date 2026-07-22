@@ -1065,7 +1065,7 @@
           gx: candidate.gx,
           gy: candidate.gy,
           color: movingItem && movingItem.type === "flag" ? movingItem.color : activeColor,
-          label: movingItem && movingItem.type === "furnace" ? movingItem.label : (candidate.type === "furnace" ? furnaceLabelInput.value.trim() : undefined)
+          label: movingItem && movingItem.type === "furnace" ? movingItem.label : undefined
         };
         const range = rangePolygon(item);
         if (range) previewRange.appendChild(range);
@@ -1122,7 +1122,7 @@
           gx: candidate.gx,
           gy: candidate.gy,
           color: candidate.type === "flag" ? activeColor : undefined,
-          label: candidate.type === "furnace" ? furnaceLabelInput.value.trim() : undefined
+          label: undefined
         };
         if (movingIndex !== null && placed[movingIndex]) {
           item.color = placed[movingIndex].type === "flag" ? (placed[movingIndex].color || activeColor) : item.color;
