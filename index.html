@@ -847,13 +847,18 @@
         if (shouldRender) renderPlaced();
       }
 
+      function syncSelectedFurnaceInput({ focus = false, select = false } = {}) {
+        if (selectedFurnaceIndex === null || placed[selectedFurnaceIndex]?.type !== "furnace") return;
+        furnaceLabelInput.value = placed[selectedFurnaceIndex].label || "";
+        if (focus) furnaceLabelInput.focus();
+        if (select) furnaceLabelInput.select();
+      }
+
       function selectPlacedItem(index) {
         selectedIndex = index;
         selectedFurnaceIndex = placed[index]?.type === "furnace" ? index : null;
         if (selectedFurnaceIndex !== null) {
-          furnaceLabelInput.value = placed[index].label || "";
-          furnaceLabelInput.focus();
-          furnaceLabelInput.select();
+          syncSelectedFurnaceInput({ focus: true, select: true });
           hint.textContent = "已选中炉子，可以修改文字，或点击“删除选中”。";
         } else {
           hint.textContent = "已选中建筑，点击“删除选中”可清掉它。";
@@ -1251,7 +1256,7 @@
             renderPlaced();
             setPlacing(false, { keepSelection: true });
             if (selectedFurnaceIndex !== null) {
-              furnaceLabelInput.focus();
+              syncSelectedFurnaceInput({ focus: true, select: true });
             }
           } else {
             renderPlaced();
@@ -1300,8 +1305,9 @@
       });
 
       furnaceLabelInput.addEventListener("input", () => {
-        if (selectedFurnaceIndex !== null && placed[selectedFurnaceIndex]?.type === "furnace") {
-          placed[selectedFurnaceIndex].label = furnaceLabelInput.value.trim();
+        if (selectedIndex !== null && placed[selectedIndex]?.type === "furnace") {
+          selectedFurnaceIndex = selectedIndex;
+          placed[selectedIndex].label = furnaceLabelInput.value.trim();
           renderPlaced();
         }
       });
