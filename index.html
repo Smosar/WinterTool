@@ -862,15 +862,17 @@
         renderPlaced();
       }
 
-      function setPlacing(next) {
+      function setPlacing(next, options = {}) {
         placing = next;
         pointerDown = false;
         dragMode = "none";
         draggingIndex = null;
         pendingMoveIndex = null;
-        selectedIndex = null;
-        selectedFurnaceIndex = null;
-        updateSelectionControls();
+        if (!options.keepSelection) {
+          selectedIndex = null;
+          selectedFurnaceIndex = null;
+          updateSelectionControls();
+        }
         panning = false;
         mapShell.classList.remove("panning");
         currentCandidate = null;
@@ -1132,9 +1134,12 @@
           selectedFurnaceIndex = item.type === "furnace" ? movingIndex : null;
         } else {
           placed.push(item);
-          selectedIndex = null;
-          selectedFurnaceIndex = null;
-          if (item.type === "furnace") furnaceLabelInput.value = "";
+          selectedIndex = item.type === "furnace" ? placed.length - 1 : null;
+          selectedFurnaceIndex = item.type === "furnace" ? placed.length - 1 : null;
+          if (item.type === "furnace") {
+            furnaceLabelInput.value = "";
+            hint.textContent = "已选中新炉子，可以直接输入名字。";
+          }
         }
         updateSelectionControls();
         return true;
@@ -1244,7 +1249,10 @@
           dragMode = "none";
           if (ok) {
             renderPlaced();
-            setPlacing(false);
+            setPlacing(false, { keepSelection: true });
+            if (selectedFurnaceIndex !== null) {
+              furnaceLabelInput.focus();
+            }
           } else {
             renderPlaced();
             previewCells.replaceChildren();
