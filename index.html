@@ -1065,7 +1065,7 @@
           gx: candidate.gx,
           gy: candidate.gy,
           color: movingItem && movingItem.type === "flag" ? movingItem.color : activeColor,
-          label: movingItem && movingItem.type === "furnace" ? movingItem.label : furnaceLabelInput.value.trim()
+          label: movingItem && movingItem.type === "furnace" ? movingItem.label : (candidate.type === "furnace" ? furnaceLabelInput.value.trim() : undefined)
         };
         const range = rangePolygon(item);
         if (range) previewRange.appendChild(range);
@@ -1132,8 +1132,9 @@
           selectedFurnaceIndex = item.type === "furnace" ? movingIndex : null;
         } else {
           placed.push(item);
-          selectedIndex = placed.length - 1;
-          selectedFurnaceIndex = item.type === "furnace" ? placed.length - 1 : null;
+          selectedIndex = null;
+          selectedFurnaceIndex = null;
+          if (item.type === "furnace") furnaceLabelInput.value = "";
         }
         updateSelectionControls();
         return true;
