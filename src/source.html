@@ -167,7 +167,7 @@
       background: rgba(7, 20, 36, 0.9);
       padding: 0.18rem 0.25rem;
       outline: none;
-      font: 500 14px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      font: 500 16px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
       text-align: center;
     }
 
@@ -659,6 +659,34 @@
       display: none;
     }
 
+    .map-shell.is-immersive .brand,
+    .map-shell.is-immersive .primary-controls,
+    .map-shell.is-immersive .side-panel,
+    .map-shell.is-immersive .map-status,
+    .map-shell.is-immersive .floating-hint {
+      display: none !important;
+    }
+
+    .map-shell.is-immersive .zoom-controls {
+      left: auto !important;
+      right: 1rem !important;
+      top: 1rem !important;
+      bottom: auto !important;
+      padding: 0 !important;
+      border-color: transparent !important;
+      background: transparent !important;
+      backdrop-filter: none !important;
+    }
+
+    .map-shell.is-immersive .zoom-controls > :not(#immersiveBtn) {
+      display: none !important;
+    }
+
+    .map-shell.is-immersive #immersiveBtn {
+      display: inline-flex !important;
+      background: rgba(7, 20, 36, 0.72);
+    }
+
     .map-status {
       top: 4rem;
     }
@@ -978,6 +1006,7 @@
           <span class="zoom-level" id="zoomLevel">100%</span>
           <button class="btn zoom-btn" id="zoomInBtn" type="button" aria-label="放大地图">+</button>
           <button class="btn zoom-btn" id="zoomResetBtn" type="button" aria-label="重置地图缩放">↺</button>
+          <button class="btn zoom-btn" id="immersiveBtn" type="button" aria-label="沉浸查看">⛶</button>
         </div>
         <div class="status map-status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
         <div class="floating-hint" id="hint"></div>
@@ -1030,6 +1059,7 @@
       const zoomOutBtn = document.getElementById("zoomOutBtn");
       const zoomInBtn = document.getElementById("zoomInBtn");
       const zoomResetBtn = document.getElementById("zoomResetBtn");
+      const immersiveBtn = document.getElementById("immersiveBtn");
       const zoomLevel = document.getElementById("zoomLevel");
       const status = document.getElementById("status");
       const hint = document.getElementById("hint");
@@ -1940,6 +1970,11 @@
       zoomOutBtn.addEventListener("click", () => setZoom(zoom / 1.25));
       zoomInBtn.addEventListener("click", () => setZoom(zoom * 1.25));
       zoomResetBtn.addEventListener("click", resetZoom);
+      immersiveBtn.addEventListener("click", () => {
+        const immersive = mapShell.classList.toggle("is-immersive");
+        immersiveBtn.textContent = immersive ? "↙" : "⛶";
+        immersiveBtn.setAttribute("aria-label", immersive ? "退出沉浸查看" : "沉浸查看");
+      });
 
       drawMapBase();
       renderPlaced();
