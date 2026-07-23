@@ -49,7 +49,7 @@
       top: 0;
       z-index: 10;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
       padding: 0.85rem clamp(0.85rem, 2vw, 1.4rem);
@@ -81,11 +81,21 @@
 
     .actions {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-end;
       justify-content: flex-end;
       gap: 0.5rem;
       flex-wrap: wrap;
       max-width: 100%;
+    }
+
+    .actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      width: 100%;
     }
 
     .btn {
@@ -148,18 +158,20 @@
       cursor: pointer;
     }
 
-    .text-control {
-      width: 9rem;
-      min-height: 2.35rem;
+    .furnace-label-editor {
+      width: 100%;
+      height: 100%;
       border: 1px solid rgba(115, 211, 255, 0.24);
-      border-radius: 0.5rem;
+      border-radius: 0.35rem;
       color: var(--text);
-      background: rgba(7, 20, 36, 0.7);
-      padding: 0.48rem 0.65rem;
+      background: rgba(7, 20, 36, 0.9);
+      padding: 0.18rem 0.25rem;
       outline: none;
+      font: 500 14px "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      text-align: center;
     }
 
-    .text-control:focus {
+    .furnace-label-editor:focus {
       border-color: rgba(117, 236, 255, 0.72);
       box-shadow: 0 0 0 3px rgba(79, 218, 247, 0.18);
     }
@@ -170,6 +182,20 @@
       font-size: 0.9rem;
       text-align: right;
       white-space: nowrap;
+    }
+
+    .map-status {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      z-index: 5;
+      min-width: auto;
+      padding: 0.45rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid rgba(115, 211, 255, 0.2);
+      background: var(--panel);
+      color: var(--text);
+      backdrop-filter: blur(10px);
     }
 
     .stage {
@@ -406,21 +432,7 @@
     }
 
     .floating-hint {
-      position: absolute;
-      left: 50%;
-      bottom: 1rem;
-      transform: translateX(-50%);
-      max-width: min(calc(100% - 1.5rem), 44rem);
-      padding: 0.55rem 0.75rem;
-      border-radius: 999px;
-      border: 1px solid rgba(115, 211, 255, 0.2);
-      background: var(--panel);
-      color: var(--text);
-      text-align: center;
-      font-size: 0.9rem;
-      line-height: 1.35;
-      backdrop-filter: blur(10px);
-      pointer-events: none;
+      display: none;
     }
 
     .watermark {
@@ -497,6 +509,11 @@
       .actions {
         justify-content: flex-start;
         gap: 0.4rem;
+        align-items: stretch;
+      }
+
+      .actions-row {
+        justify-content: flex-start;
       }
 
       .status {
@@ -521,11 +538,6 @@
         flex-wrap: wrap;
       }
 
-      .text-control {
-        flex: 1 1 8rem;
-        width: auto;
-      }
-
       .zoom-controls {
         left: 0.55rem;
         top: 0.55rem;
@@ -533,6 +545,15 @@
 
       .floating-hint {
         border-radius: 0.55rem;
+      }
+
+      .map-status {
+        left: 0.55rem;
+        right: 0.55rem;
+        top: auto;
+        bottom: 0.55rem;
+        width: auto;
+        text-align: center;
       }
 
       .watermark {
@@ -563,25 +584,26 @@
     <header class="toolbar">
       <div class="brand">
         <strong>无尽冬日地图工具</strong>
-        <span>地图范围 300×300，默认视野 20×20，最大放大至 5×5</span>
       </div>
       <div class="actions" aria-label="地图操作">
-        <div class="tool-group" aria-label="可放置元素">
-          <button class="btn primary element-btn" data-type="furnace" type="button">炉子 2×2</button>
-          <button class="btn element-btn" data-type="flag" type="button">旗子 1×1</button>
-          <button class="btn element-btn" data-type="bearPit" type="button">熊坑 3×3</button>
-          <button class="btn element-btn" data-type="mine" type="button">地图矿 2×2</button>
+        <div class="actions-row">
+          <div class="tool-group" aria-label="主要元素">
+            <button class="btn primary element-btn" data-type="furnace" type="button">炉子</button>
+            <button class="btn element-btn" data-type="flag" type="button">旗子</button>
+            <input class="color-control" id="flagColorInput" type="color" value="#32cdff" aria-label="旗子范围颜色">
+          </div>
         </div>
-        <div class="tool-group" aria-label="旗子范围颜色">
-          <input class="color-control" id="flagColorInput" type="color" value="#32cdff" aria-label="旗子范围颜色">
+        <div class="actions-row">
+          <div class="tool-group" aria-label="其他元素">
+            <button class="btn element-btn" data-type="bearPit" type="button">熊坑</button>
+            <button class="btn element-btn" data-type="mine" type="button">地图矿</button>
+          </div>
+          <button class="btn" id="gridBtn" type="button">隐藏标线</button>
+          <button class="btn" id="furnaceFootprintBtn" type="button">隐藏炉子占格</button>
+          <button class="btn" id="flagFootprintBtn" type="button">隐藏旗子范围</button>
+          <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
+          <button class="btn danger" id="clearBtn" type="button">清空所有建筑</button>
         </div>
-        <input class="text-control" id="furnaceLabelInput" type="text" maxlength="8" placeholder="炉子文字" aria-label="炉子底部文字">
-        <button class="btn" id="gridBtn" type="button">显示格子</button>
-        <button class="btn" id="furnaceFootprintBtn" type="button">隐藏炉子占格</button>
-        <button class="btn" id="flagFootprintBtn" type="button">隐藏旗子占格</button>
-        <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
-        <button class="btn danger" id="clearBtn" type="button">清空</button>
-        <div class="status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
       </div>
     </header>
 
@@ -617,7 +639,8 @@
           <button class="btn zoom-btn" id="zoomInBtn" type="button" aria-label="放大地图">+</button>
           <button class="btn zoom-btn" id="zoomResetBtn" type="button" aria-label="重置地图缩放">↺</button>
         </div>
-        <div class="floating-hint" id="hint">选择元素后拖到地图上放置；拖动空白地图可平移，滚轮可缩放。</div>
+        <div class="status map-status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
+        <div class="floating-hint" id="hint"></div>
         <div class="watermark">2359大蚂蚱制作</div>
       </div>
     </section>
@@ -657,7 +680,6 @@
       const previewItem = document.getElementById("previewItem");
       const elementButtons = Array.from(document.querySelectorAll(".element-btn"));
       const flagColorInput = document.getElementById("flagColorInput");
-      const furnaceLabelInput = document.getElementById("furnaceLabelInput");
       const gridBtn = document.getElementById("gridBtn");
       const furnaceFootprintBtn = document.getElementById("furnaceFootprintBtn");
       const flagFootprintBtn = document.getElementById("flagFootprintBtn");
@@ -679,7 +701,7 @@
       let zoom = initialZoom;
       let gridVisible = false;
       let furnaceFootprintsVisible = true;
-      let flagFootprintsVisible = true;
+      let flagRangesVisible = true;
       let activeType = "furnace";
       let activeColor = "#32cdff";
       let placing = false;
@@ -692,6 +714,7 @@
       let pendingMoveIndex = null;
       let selectedIndex = null;
       let selectedFurnaceIndex = null;
+      let editingFurnaceIndex = null;
       let currentCandidate = null;
       let suppressNextMapClick = false;
 
@@ -869,7 +892,7 @@
       function setGridVisible(next) {
         gridVisible = next;
         mapShell.classList.toggle("grid-visible", gridVisible);
-        gridBtn.textContent = gridVisible ? "隐藏格子" : "显示格子";
+        gridBtn.textContent = gridVisible ? "隐藏标线" : "显示标线";
       }
 
       function setFurnaceFootprintsVisible(next) {
@@ -879,8 +902,8 @@
       }
 
       function setFlagFootprintsVisible(next) {
-        flagFootprintsVisible = next;
-        flagFootprintBtn.textContent = flagFootprintsVisible ? "隐藏旗子占格" : "显示旗子占格";
+        flagRangesVisible = next;
+        flagFootprintBtn.textContent = flagRangesVisible ? "隐藏旗子范围" : "显示旗子范围";
         renderPlaced();
       }
 
@@ -905,23 +928,16 @@
       function clearSelection(shouldRender = true) {
         selectedIndex = null;
         selectedFurnaceIndex = null;
+        editingFurnaceIndex = null;
         updateSelectionControls();
         if (shouldRender) renderPlaced();
-      }
-
-      function syncSelectedFurnaceInput({ focus = false, select = false } = {}) {
-        if (selectedFurnaceIndex === null || placed[selectedFurnaceIndex]?.type !== "furnace") return;
-        furnaceLabelInput.value = placed[selectedFurnaceIndex].label || "";
-        if (focus) furnaceLabelInput.focus();
-        if (select) furnaceLabelInput.select();
       }
 
       function selectPlacedItem(index) {
         selectedIndex = index;
         selectedFurnaceIndex = placed[index]?.type === "furnace" ? index : null;
         if (selectedFurnaceIndex !== null) {
-          syncSelectedFurnaceInput({ focus: true, select: true });
-          hint.textContent = "已选中炉子，可以修改文字，或点击“删除选中”。";
+          hint.textContent = "已选中炉子，点击底部文字可编辑。";
         } else {
           hint.textContent = "已选中建筑，点击“删除选中”可清掉它。";
         }
@@ -952,7 +968,7 @@
           previewCells.replaceChildren();
           previewItem.replaceChildren();
           previewRange.replaceChildren();
-          hint.textContent = "选择元素后拖到地图上放置；拖动空白地图可平移，滚轮可缩放。";
+          hint.textContent = "";
         }
       }
 
@@ -1026,14 +1042,14 @@
           transform: `translate(${center.x.toFixed(2)} ${(center.y + def.yOffset).toFixed(2)}) scale(${def.scale})`
         });
         if (index !== null) group.dataset.index = String(index);
-        if (def.icon === "furnace") drawFurnaceIcon(group, item.label);
+        if (def.icon === "furnace") drawFurnaceIcon(group, item.label, index);
         if (def.icon === "flag") drawFlagIcon(group);
         if (def.icon === "bearPit") drawBearPitIcon(group);
         if (def.icon === "mine") drawMineIcon(group);
         return group;
       }
 
-      function drawFurnaceIcon(group, label = "") {
+      function drawFurnaceIcon(group, label = "", index = null) {
         group.append(
           createSvgElement("ellipse", { cx: 0, cy: 31, rx: 34, ry: 11, fill: "rgba(2, 16, 28, 0.42)" }),
           createSvgElement("path", { class: "ice-roof", d: "M 11 -30 L 21 -24 L 19 -8 L 9 -12 Z" }),
@@ -1043,8 +1059,22 @@
           createSvgElement("circle", { class: "spark", cx: 17, cy: -2, r: 3 }),
           createSvgElement("circle", { class: "spark", cx: 3, cy: -21, r: 3.5 })
         );
-        if (label) {
+        if (index !== null && index === editingFurnaceIndex) {
+          const foreign = createSvgElement("foreignObject", { x: -42, y: 35, width: 84, height: 28 });
+          const input = document.createElement("input");
+          input.className = "furnace-label-editor";
+          input.value = label || "";
+          input.maxLength = 8;
+          input.dataset.index = String(index);
+          foreign.appendChild(input);
+          group.append(foreign);
+          requestAnimationFrame(() => {
+            input.focus();
+            input.select();
+          });
+        } else if (label) {
           const text = createSvgElement("text", { class: "item-label", x: 0, y: 37 });
+          text.dataset.index = String(index);
           text.textContent = label;
           group.append(text);
         }
@@ -1185,7 +1215,7 @@
           if (index === draggingIndex) return;
           const shouldShowFootprint =
             (item.type === "furnace" && furnaceFootprintsVisible) ||
-            (item.type === "flag" && flagFootprintsVisible) ||
+            item.type === "flag" ||
             (item.type !== "furnace" && item.type !== "flag");
           if (shouldShowFootprint) {
             footprintNodes.push(createSvgElement("polygon", {
@@ -1195,7 +1225,7 @@
           }
           itemNodes.push(iconGroup(item, "map-item", false, index));
         });
-        ranges.replaceChildren(...mergedRangeNodes(placed.filter((_, index) => index !== draggingIndex)));
+        ranges.replaceChildren(...(flagRangesVisible ? mergedRangeNodes(placed.filter((_, index) => index !== draggingIndex)) : []));
         footprints.replaceChildren(...footprintNodes);
         items.replaceChildren(...itemNodes);
         updateStatus();
@@ -1220,12 +1250,13 @@
           placed[movingIndex] = item;
           selectedIndex = movingIndex;
           selectedFurnaceIndex = item.type === "furnace" ? movingIndex : null;
+          editingFurnaceIndex = item.type === "furnace" ? movingIndex : null;
         } else {
           placed.push(item);
           selectedIndex = item.type === "furnace" ? placed.length - 1 : null;
           selectedFurnaceIndex = item.type === "furnace" ? placed.length - 1 : null;
+          editingFurnaceIndex = item.type === "furnace" ? placed.length - 1 : null;
           if (item.type === "furnace") {
-            furnaceLabelInput.value = "";
             hint.textContent = "已选中新炉子，可以直接输入名字。";
           }
         }
@@ -1257,6 +1288,7 @@
           pendingMoveIndex = null;
           selectedIndex = null;
           selectedFurnaceIndex = null;
+          editingFurnaceIndex = null;
           updateSelectionControls();
           dragMode = "move";
           setGridVisible(true);
@@ -1280,6 +1312,7 @@
       }
 
       function handlePointerDown(event) {
+        if (event.target.closest(".furnace-label-editor")) return;
         if (event.target.closest("button")) return;
         const itemEl = event.target.closest(".map-item");
         event.preventDefault();
@@ -1355,9 +1388,45 @@
           suppressNextMapClick = false;
           return;
         }
+        const labelTarget = event.target.closest(".item-label");
+        if (labelTarget?.dataset.index) {
+          const index = Number(labelTarget.dataset.index);
+          if (placed[index]?.type === "furnace") {
+            selectedIndex = index;
+            selectedFurnaceIndex = index;
+            editingFurnaceIndex = index;
+            updateSelectionControls();
+            renderPlaced();
+          }
+          return;
+        }
         if (placing || event.target.closest("button")) return;
         if (!event.target.closest(".map-item")) clearSelection();
         setGridVisible(!gridVisible);
+      });
+
+      mapShell.addEventListener("input", (event) => {
+        if (!event.target.classList.contains("furnace-label-editor")) return;
+        const index = Number(event.target.dataset.index);
+        if (placed[index]?.type !== "furnace") return;
+        placed[index].label = event.target.value.trim();
+      });
+
+      mapShell.addEventListener("focusout", (event) => {
+        if (!event.target.classList.contains("furnace-label-editor")) return;
+        const index = Number(event.target.dataset.index);
+        if (placed[index]?.type === "furnace") {
+          placed[index].label = event.target.value.trim();
+        }
+        editingFurnaceIndex = null;
+        renderPlaced();
+      });
+
+      mapShell.addEventListener("keydown", (event) => {
+        if (!event.target.classList.contains("furnace-label-editor")) return;
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        event.target.blur();
       });
 
       mapShell.addEventListener("pointermove", handlePointerMove);
@@ -1369,6 +1438,7 @@
         dragMode = "none";
         draggingIndex = null;
         pendingMoveIndex = null;
+        editingFurnaceIndex = null;
         mapShell.classList.remove("panning");
         renderPlaced();
       });
@@ -1385,14 +1455,6 @@
 
       flagColorInput.addEventListener("input", () => {
         setActiveColor(flagColorInput.value);
-      });
-
-      furnaceLabelInput.addEventListener("input", () => {
-        if (selectedIndex !== null && placed[selectedIndex]?.type === "furnace") {
-          selectedFurnaceIndex = selectedIndex;
-          placed[selectedIndex].label = furnaceLabelInput.value.trim();
-          renderPlaced();
-        }
       });
 
       deleteSelectedBtn.addEventListener("click", () => {
@@ -1430,7 +1492,7 @@
         previewCells.replaceChildren();
         previewItem.replaceChildren();
         previewRange.replaceChildren();
-        hint.textContent = "地图已清空。选择元素后可以继续放置。";
+        hint.textContent = "";
       });
 
       zoomOutBtn.addEventListener("click", () => setZoom(zoom / 1.25));
