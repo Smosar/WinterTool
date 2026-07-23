@@ -15,9 +15,7 @@
       --bad: rgba(255, 87, 87, 0.6);
       --cyan: #4fdaf7;
       --shadow: 0 18px 55px rgba(0, 0, 0, 0.35);
-      --range-blue: rgb(50, 205, 255);
-      --range-gold: rgb(255, 202, 80);
-      --range-purple: rgb(176, 116, 255);
+      --range-default: #32cdff;
     }
 
     * {
@@ -87,6 +85,7 @@
       justify-content: flex-end;
       gap: 0.5rem;
       flex-wrap: wrap;
+      max-width: 100%;
     }
 
     .btn {
@@ -136,33 +135,17 @@
       border: 1px solid rgba(115, 211, 255, 0.16);
       border-radius: 0.65rem;
       background: rgba(7, 20, 36, 0.45);
+      flex-wrap: wrap;
     }
 
-    .swatch {
-      width: 2.35rem;
+    .color-control {
+      width: 2.7rem;
       min-height: 2.35rem;
-      padding: 0;
+      border: 1px solid rgba(115, 211, 255, 0.24);
       border-radius: 0.5rem;
-    }
-
-    .swatch::before {
-      content: "";
-      width: 1.1rem;
-      height: 1.1rem;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.72);
-    }
-
-    .swatch[data-color="blue"]::before {
-      background: #32cdff;
-    }
-
-    .swatch[data-color="gold"]::before {
-      background: #ffca50;
-    }
-
-    .swatch[data-color="purple"]::before {
-      background: #b074ff;
+      background: rgba(7, 20, 36, 0.7);
+      padding: 0.2rem;
+      cursor: pointer;
     }
 
     .text-control {
@@ -278,16 +261,8 @@
       fill-opacity: 0.22;
     }
 
-    .range.blue {
-      fill: var(--range-blue);
-    }
-
-    .range.gold {
-      fill: var(--range-gold);
-    }
-
-    .range.purple {
-      fill: var(--range-purple);
+    .flag-footprint {
+      display: inline;
     }
 
     .cell-preview polygon {
@@ -330,7 +305,9 @@
     .map-item.is-selected .flag-cloth,
     .map-item.is-selected .pit-stone,
     .map-item.is-selected .pit-ice,
-    .map-item.is-selected .bear-face {
+    .map-item.is-selected .bear-face,
+    .map-item.is-selected .mine-rock,
+    .map-item.is-selected .mine-face {
       stroke: #fff2a8;
       stroke-width: 5;
     }
@@ -407,6 +384,20 @@
     .bear-feature {
       fill: #36556b;
       stroke: none;
+    }
+
+    .mine-rock {
+      fill: #9da8b3;
+      stroke: #3f4c58;
+      stroke-width: 3;
+      stroke-linejoin: round;
+    }
+
+    .mine-face {
+      fill: #c6cbd1;
+      stroke: #515d69;
+      stroke-width: 2;
+      stroke-linejoin: round;
     }
 
     .spark {
@@ -495,6 +486,8 @@
       .toolbar {
         align-items: stretch;
         flex-direction: column;
+        gap: 0.65rem;
+        padding: 0.7rem;
       }
 
       .brand span {
@@ -503,6 +496,7 @@
 
       .actions {
         justify-content: flex-start;
+        gap: 0.4rem;
       }
 
       .status {
@@ -513,17 +507,23 @@
 
       .map-shell {
         min-height: 560px;
-        height: calc(100vh - 15rem);
+        height: calc(100dvh - 17rem);
         border-radius: 0.55rem;
       }
 
       .btn {
         flex: 1 1 auto;
+        min-width: max-content;
       }
 
       .tool-group {
         flex: 1 1 100%;
         flex-wrap: wrap;
+      }
+
+      .text-control {
+        flex: 1 1 8rem;
+        width: auto;
       }
 
       .zoom-controls {
@@ -540,6 +540,22 @@
         bottom: 0.55rem;
       }
     }
+
+    @media (max-width: 480px) {
+      .map-shell {
+        min-height: 460px;
+        height: calc(100dvh - 20rem);
+      }
+
+      .floating-hint {
+        bottom: 3rem;
+        font-size: 0.82rem;
+      }
+
+      .zoom-controls {
+        gap: 0.25rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -554,15 +570,14 @@
           <button class="btn primary element-btn" data-type="furnace" type="button">炉子 2×2</button>
           <button class="btn element-btn" data-type="flag" type="button">旗子 1×1</button>
           <button class="btn element-btn" data-type="bearPit" type="button">熊坑 3×3</button>
+          <button class="btn element-btn" data-type="mine" type="button">地图矿 2×2</button>
         </div>
         <div class="tool-group" aria-label="旗子范围颜色">
-          <button class="btn swatch is-selected" data-color="blue" type="button" aria-label="蓝色范围"></button>
-          <button class="btn swatch" data-color="gold" type="button" aria-label="黄色范围"></button>
-          <button class="btn swatch" data-color="purple" type="button" aria-label="紫色范围"></button>
+          <input class="color-control" id="flagColorInput" type="color" value="#32cdff" aria-label="旗子范围颜色">
         </div>
         <input class="text-control" id="furnaceLabelInput" type="text" maxlength="8" placeholder="炉子文字" aria-label="炉子底部文字">
         <button class="btn" id="gridBtn" type="button">显示格子</button>
-        <button class="btn" id="footprintBtn" type="button">隐藏占格</button>
+        <button class="btn" id="footprintBtn" type="button">隐藏旗子占格</button>
         <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
         <button class="btn danger" id="clearBtn" type="button">清空</button>
         <div class="status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
@@ -624,7 +639,8 @@
       const ELEMENTS = {
         furnace: { label: "炉子", w: 2, h: 2, icon: "furnace", yOffset: -19, scale: 0.68 },
         flag: { label: "旗子", w: 1, h: 1, icon: "flag", yOffset: -18, scale: 0.72, range: 7 },
-        bearPit: { label: "熊坑", w: 3, h: 3, icon: "bearPit", yOffset: -5, scale: 0.52 }
+        bearPit: { label: "熊坑", w: 3, h: 3, icon: "bearPit", yOffset: -5, scale: 0.52 },
+        mine: { label: "地图矿", w: 2, h: 2, icon: "mine", yOffset: -9, scale: 0.72 }
       };
 
       const mapShell = document.getElementById("mapShell");
@@ -639,7 +655,7 @@
       const items = document.getElementById("items");
       const previewItem = document.getElementById("previewItem");
       const elementButtons = Array.from(document.querySelectorAll(".element-btn"));
-      const colorButtons = Array.from(document.querySelectorAll(".swatch"));
+      const flagColorInput = document.getElementById("flagColorInput");
       const furnaceLabelInput = document.getElementById("furnaceLabelInput");
       const gridBtn = document.getElementById("gridBtn");
       const footprintBtn = document.getElementById("footprintBtn");
@@ -660,9 +676,9 @@
       let viewBox = initialViewBox();
       let zoom = initialZoom;
       let gridVisible = false;
-      let footprintsVisible = true;
+      let flagFootprintsVisible = true;
       let activeType = "furnace";
-      let activeColor = "blue";
+      let activeColor = "#32cdff";
       let placing = false;
       let pointerDown = false;
       let panning = false;
@@ -853,10 +869,10 @@
         gridBtn.textContent = gridVisible ? "隐藏格子" : "显示格子";
       }
 
-      function setFootprintsVisible(next) {
-        footprintsVisible = next;
-        footprints.style.display = footprintsVisible ? "" : "none";
-        footprintBtn.textContent = footprintsVisible ? "隐藏占格" : "显示占格";
+      function setFlagFootprintsVisible(next) {
+        flagFootprintsVisible = next;
+        footprintBtn.textContent = flagFootprintsVisible ? "隐藏旗子占格" : "显示旗子占格";
+        renderPlaced();
       }
 
       function setActiveType(type) {
@@ -870,9 +886,6 @@
 
       function setActiveColor(color) {
         activeColor = color;
-        colorButtons.forEach((btn) => {
-          btn.classList.toggle("is-selected", btn.dataset.color === color);
-        });
         if (placing && activeType === "flag") drawPreview(defaultCandidate("flag"));
       }
 
@@ -1007,6 +1020,7 @@
         if (def.icon === "furnace") drawFurnaceIcon(group, item.label);
         if (def.icon === "flag") drawFlagIcon(group);
         if (def.icon === "bearPit") drawBearPitIcon(group);
+        if (def.icon === "mine") drawMineIcon(group);
         return group;
       }
 
@@ -1053,6 +1067,17 @@
         );
       }
 
+      function drawMineIcon(group) {
+        group.append(
+          createSvgElement("ellipse", { cx: 0, cy: 31, rx: 34, ry: 10, fill: "rgba(2, 16, 28, 0.34)" }),
+          createSvgElement("path", { class: "mine-rock", d: "M -34 15 L -20 -16 L 8 -28 L 33 -9 L 29 20 L 3 31 L -24 28 Z" }),
+          createSvgElement("path", { class: "mine-face", d: "M -15 9 L -5 -12 L 12 -17 L 23 -4 L 17 14 L 0 22 Z" }),
+          createSvgElement("path", { d: "M -23 21 L 29 -5", stroke: "#d8dde2", "stroke-width": 3, "stroke-linecap": "round" }),
+          createSvgElement("circle", { cx: -9, cy: -2, r: 3, fill: "#eef2f4" }),
+          createSvgElement("circle", { cx: 11, cy: 8, r: 3.5, fill: "#747f8a" })
+        );
+      }
+
       function rangePathData(item) {
         if (item.type !== "flag") return null;
         const range = rangeBoundsForFlag(item);
@@ -1070,23 +1095,27 @@
         const d = rangePathData(item);
         if (!d) return null;
         return createSvgElement("path", {
-          class: `range ${item.color || activeColor}`,
+          class: "range",
+          fill: item.color || activeColor,
           d
         });
       }
 
       function mergedRangeNodes(sourceItems) {
-        const pathsByColor = { blue: [], gold: [], purple: [] };
+        const pathsByColor = new Map();
         sourceItems.forEach((item) => {
           if (item.type !== "flag") return;
           const d = rangePathData(item);
           if (!d) return;
-          pathsByColor[item.color || "blue"].push(d);
+          const color = item.color || activeColor;
+          if (!pathsByColor.has(color)) pathsByColor.set(color, []);
+          pathsByColor.get(color).push(d);
         });
-        return Object.entries(pathsByColor)
+        return Array.from(pathsByColor.entries())
           .filter(([, paths]) => paths.length)
           .map(([color, paths]) => createSvgElement("path", {
-            class: `range ${color}`,
+            class: "range",
+            fill: color,
             d: paths.join(" ")
           }));
       }
@@ -1145,10 +1174,12 @@
         placed.forEach((item, index) => {
           const def = ELEMENTS[item.type];
           if (index === draggingIndex) return;
-          footprintNodes.push(createSvgElement("polygon", {
-            class: "footprint",
-            points: rectPolygon(item.gx, item.gy, def.w, def.h)
-          }));
+          if (item.type !== "flag" || flagFootprintsVisible) {
+            footprintNodes.push(createSvgElement("polygon", {
+              class: `footprint${item.type === "flag" ? " flag-footprint" : ""}`,
+              points: rectPolygon(item.gx, item.gy, def.w, def.h)
+            }));
+          }
           itemNodes.push(iconGroup(item, "map-item", false, index));
         });
         ranges.replaceChildren(...mergedRangeNodes(placed.filter((_, index) => index !== draggingIndex)));
@@ -1339,8 +1370,8 @@
         btn.addEventListener("click", () => setActiveType(btn.dataset.type));
       });
 
-      colorButtons.forEach((btn) => {
-        btn.addEventListener("click", () => setActiveColor(btn.dataset.color));
+      flagColorInput.addEventListener("input", () => {
+        setActiveColor(flagColorInput.value);
       });
 
       furnaceLabelInput.addEventListener("input", () => {
@@ -1370,7 +1401,7 @@
       });
 
       footprintBtn.addEventListener("click", () => {
-        setFootprintsVisible(!footprintsVisible);
+        setFlagFootprintsVisible(!flagFootprintsVisible);
       });
 
       clearBtn.addEventListener("click", () => {
@@ -1393,7 +1424,7 @@
       renderPlaced();
       applyViewBox();
       setGridVisible(false);
-      setFootprintsVisible(true);
+      setFlagFootprintsVisible(true);
     })();
   </script>
 </body>
