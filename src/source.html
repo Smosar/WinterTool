@@ -1446,7 +1446,7 @@
 
       function handlePointerDown(event) {
         if (event.target.closest(".furnace-label-editor")) return;
-        if (event.target.closest("button")) return;
+        if (event.target.closest("button, input, .primary-controls, .side-panel, .zoom-controls")) return;
         const itemEl = event.target.closest(".map-item");
         event.preventDefault();
         pointerDown = true;
@@ -1521,6 +1521,7 @@
           suppressNextMapClick = false;
           return;
         }
+        if (event.target.closest("button, input, .primary-controls, .side-panel, .zoom-controls")) return;
         const labelTarget = event.target.closest(".item-label");
         if (labelTarget?.dataset.index) {
           const index = Number(labelTarget.dataset.index);
@@ -1534,7 +1535,19 @@
           return;
         }
         if (placing || event.target.closest("button")) return;
-        if (!event.target.closest(".map-item")) clearSelection();
+        const clickedItem = event.target.closest(".map-item");
+        if (clickedItem?.dataset.index) {
+          const index = Number(clickedItem.dataset.index);
+          if (placed[index]?.type === "furnace") {
+            selectedIndex = index;
+            selectedFurnaceIndex = index;
+            editingFurnaceIndex = index;
+            updateSelectionControls();
+            renderPlaced();
+            return;
+          }
+        }
+        if (!clickedItem) clearSelection();
         setGridVisible(!gridVisible);
       });
 
