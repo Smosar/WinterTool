@@ -754,6 +754,24 @@
       .panel-content .btn {
         justify-content: flex-start;
       }
+
+      .map-item,
+      .preview-item {
+        filter: none;
+      }
+
+      .brand,
+      .map-status,
+      .zoom-controls,
+      .panel-content,
+      .watermark {
+        backdrop-filter: none;
+      }
+
+      .snow,
+      .terrain-line {
+        opacity: 0.55;
+      }
     }
   </style>
 </head>
@@ -1048,6 +1066,7 @@
       function applyViewBox() {
         mapSvg.setAttribute("viewBox", `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
         zoomLevel.textContent = `${Math.round(zoom * 100)}%`;
+        renderVisibleGrid();
       }
 
       function setZoom(nextZoom, anchor = null) {
@@ -1076,6 +1095,7 @@
         gridVisible = next;
         mapShell.classList.toggle("grid-visible", gridVisible);
         gridBtn.textContent = gridVisible ? "隐藏标线" : "显示标线";
+        renderVisibleGrid();
       }
 
       function setFurnaceFootprintsVisible(next) {
@@ -1153,6 +1173,7 @@
           previewRange.replaceChildren();
           hint.textContent = "";
         }
+        renderVisibleGrid();
       }
 
       function updateStatus() {
@@ -1169,23 +1190,7 @@
 
       function drawMapBase() {
         mapBoundary.setAttribute("points", polygonPoints(mapCorners));
-
-        const lines = [];
-        for (let i = 0; i <= mapSize; i += 1) {
-          const a = point(i, 0);
-          const b = point(i, mapSize);
-          const c = point(0, i);
-          const d = point(mapSize, i);
-          lines.push(createSvgElement("line", {
-            x1: a.x, y1: a.y, x2: b.x, y2: b.y,
-            class: i % 50 === 0 ? "major" : ""
-          }));
-          lines.push(createSvgElement("line", {
-            x1: c.x, y1: c.y, x2: d.x, y2: d.y,
-            class: i % 50 === 0 ? "major" : ""
-          }));
-        }
-        gridLines.replaceChildren(...lines);
+        renderVisibleGrid();
 
         const terrainNodes = [];
         for (let i = 0; i < 84; i += 1) {
@@ -1219,6 +1224,38 @@
         }
 
         terrain.replaceChildren(...terrainNodes);
+      }
+
+      function renderVisibleGrid() {
+        if (!gridVisible && !placing && dragMode !== "move" && dragMode !== "place") {
+          gridLines.replaceChildren();
+          return;
+        }
+        const corners = [
+          { x: viewBox.x, y: viewBox.y },
+          { x: viewBox.x + viewBox.w, y: viewBox.y },
+          { x: viewBox.x + viewBox.w, y: viewBox.y + viewBox.h },
+          { x: viewBox.x, y: viewBox.y + viewBox.h }
+        ].map(gridFromSvgPoint);
+        const minGx = Math.max(0, Math.floor(Math.min(...corners.map((p) => p.gx)) - 4));
+        const maxGx = Math.min(mapSize, Math.ceil(Math.max(...corners.map((p) => p.gx)) + 4));
+        const minGy = Math.max(0, Math.floor(Math.min(...corners.map((p) => p.gy)) - 4));
+        const maxGy = Math.min(mapSize, Math.ceil(Math.max(...corners.map((p) => p.gy)) + 4));
+        const step = zoom < 3 ? 5 : 1;
+        const startX = Math.floor(minGx / step) * step;
+        const startY = Math.floor(minGy / step) * step;
+        const lines = [];
+        for (let gx = startX; gx <= maxGx; gx += step) {
+          const a = point(gx, minGy);
+          const b = point(gx, maxGy);
+          lines.push(createSvgElement("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: gx % 50 === 0 ? "major" : "" }));
+        }
+        for (let gy = startY; gy <= maxGy; gy += step) {
+          const a = point(minGx, gy);
+          const b = point(maxGx, gy);
+          lines.push(createSvgElement("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, class: gy % 50 === 0 ? "major" : "" }));
+        }
+        gridLines.replaceChildren(...lines);
       }
 
       function iconGroup(item, className, invalid = false, index = null) {
