@@ -1488,7 +1488,14 @@
           const index = pendingMoveIndex;
           pendingMoveIndex = null;
           dragMode = "none";
-          if (index !== null && placed[index]) selectPlacedItem(index);
+          if (index !== null && placed[index]) {
+            selectPlacedItem(index);
+            if (placed[index].type === "furnace") {
+              editingFurnaceIndex = index;
+              renderPlaced();
+            }
+            suppressNextMapClick = true;
+          }
           return;
         }
 
