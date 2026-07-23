@@ -196,6 +196,18 @@
       background: var(--panel);
       color: var(--text);
       backdrop-filter: blur(10px);
+      display: grid;
+      gap: 0.25rem;
+      text-align: left;
+      border-radius: 0.65rem;
+    }
+
+    .stat-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.55rem;
+      min-width: 5.8rem;
     }
 
     .stage {
@@ -700,20 +712,47 @@
 
     @media (max-width: 820px) {
       .primary-controls {
-        top: 3.7rem;
-        padding-right: 7rem;
+        top: 3.6rem;
+        left: 0.55rem;
+        right: auto;
+        max-width: calc(100% - 7rem);
+        padding-right: 0;
       }
 
       .map-status {
-        left: 0.55rem;
+        left: auto;
         right: 0.55rem;
-        top: 7.1rem;
+        top: 3.6rem;
         bottom: auto;
-        width: auto;
+        width: max-content;
+        text-align: left;
       }
 
       .side-panel {
-        top: 10.8rem;
+        top: 8.4rem;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .primary-controls {
+        top: 3.45rem;
+        left: 0.55rem;
+        right: 0.55rem;
+        max-width: none;
+      }
+
+      .map-status {
+        top: 7.25rem;
+        left: 0.55rem;
+        right: auto;
+      }
+
+      .side-panel {
+        top: 11.6rem;
+      }
+
+      .panel-content .btn {
+        justify-content: flex-start;
       }
     }
   </style>
@@ -850,6 +889,8 @@
       let editingFurnaceIndex = null;
       let currentCandidate = null;
       let suppressNextMapClick = false;
+      const activePointers = new Map();
+      let pinchState = null;
 
       function point(gx, gy) {
         return {
@@ -906,6 +947,15 @@
         const pt = mapSvg.createSVGPoint();
         pt.x = event.clientX;
         pt.y = event.clientY;
+        const matrix = mapSvg.getScreenCTM();
+        if (!matrix) return null;
+        return pt.matrixTransform(matrix.inverse());
+      }
+
+      function svgPointFromClient(clientX, clientY) {
+        const pt = mapSvg.createSVGPoint();
+        pt.x = clientX;
+        pt.y = clientY;
         const matrix = mapSvg.getScreenCTM();
         if (!matrix) return null;
         return pt.matrixTransform(matrix.inverse());
@@ -1109,7 +1159,11 @@
         const total = placed.length;
         const furnaceCount = placed.filter((item) => item.type === "furnace").length;
         const flagCount = placed.filter((item) => item.type === "flag").length;
-        const stats = `总数 <span class="badge">${total}</span> 炉子 <span class="badge">${furnaceCount}</span> 旗子 <span class="badge">${flagCount}</span>`;
+        const stats = `
+          <span class="stat-line">总数 <span class="badge">${total}</span></span>
+          <span class="stat-line">炉子 <span class="badge">${furnaceCount}</span></span>
+          <span class="stat-line">旗子 <span class="badge">${flagCount}</span></span>
+        `;
         status.innerHTML = stats;
       }
 
@@ -1412,6 +1466,18 @@
       }
 
       function handlePointerMove(event) {
+        if (activePointers.has(event.pointerId)) {
+          activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        }
+        if (pinchState && activePointers.size >= 2) {
+          event.preventDefault();
+          const points = Array.from(activePointers.values()).slice(0, 2);
+          const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+          if (distance > 0) {
+            setZoom(pinchState.zoom * (distance / pinchState.distance), pinchState.anchor);
+          }
+          return;
+        }
         if (dragMode === "pending-move" && pendingMoveIndex !== null) {
           const dx = event.clientX - panStart.x;
           const dy = event.clientY - panStart.y;
@@ -1447,6 +1513,21 @@
       function handlePointerDown(event) {
         if (event.target.closest(".furnace-label-editor")) return;
         if (event.target.closest("button, input, .primary-controls, .side-panel, .zoom-controls")) return;
+        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (activePointers.size === 2) {
+          const points = Array.from(activePointers.values()).slice(0, 2);
+          const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+          const anchor = svgPointFromClient((points[0].x + points[1].x) / 2, (points[0].y + points[1].y) / 2);
+          pinchState = { distance, zoom, anchor };
+          pointerDown = false;
+          panning = false;
+          dragMode = "none";
+          pendingMoveIndex = null;
+          draggingIndex = null;
+          mapShell.classList.remove("panning");
+          suppressNextMapClick = true;
+          return;
+        }
         const itemEl = event.target.closest(".map-item");
         event.preventDefault();
         pointerDown = true;
@@ -1481,6 +1562,10 @@
       }
 
       function handlePointerUp(event) {
+        activePointers.delete(event.pointerId);
+        if (activePointers.size < 2) {
+          pinchState = null;
+        }
         if (!pointerDown) return;
         event.preventDefault();
         pointerDown = false;
@@ -1593,6 +1678,8 @@
       mapShell.addEventListener("pointerdown", handlePointerDown);
       mapShell.addEventListener("pointerup", handlePointerUp);
       mapShell.addEventListener("pointercancel", () => {
+        activePointers.clear();
+        pinchState = null;
         pointerDown = false;
         panning = false;
         dragMode = "none";
