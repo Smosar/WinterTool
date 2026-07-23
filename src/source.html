@@ -577,39 +577,143 @@
         gap: 0.25rem;
       }
     }
+
+    .app {
+      grid-template-rows: 1fr;
+    }
+
+    .stage {
+      padding: clamp(0.5rem, 2vw, 1.25rem);
+    }
+
+    .map-shell {
+      height: min(calc(100dvh - 2rem), 860px);
+    }
+
+    .brand {
+      position: absolute;
+      left: 50%;
+      top: 0.75rem;
+      z-index: 8;
+      transform: translateX(-50%);
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(115, 211, 255, 0.2);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+    }
+
+    .primary-controls {
+      position: absolute;
+      right: 1rem;
+      top: 4rem;
+      z-index: 7;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      max-width: min(24rem, calc(100% - 2rem));
+    }
+
+    .side-panel {
+      position: absolute;
+      right: 1rem;
+      top: 8rem;
+      z-index: 7;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+
+    .panel-toggle {
+      width: 2.35rem;
+      min-height: 2.35rem;
+      padding: 0;
+    }
+
+    .panel-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 0.35rem;
+      border: 1px solid rgba(115, 211, 255, 0.16);
+      border-radius: 0.65rem;
+      background: rgba(7, 20, 36, 0.72);
+      backdrop-filter: blur(10px);
+    }
+
+    .side-panel.is-collapsed .panel-content {
+      display: none;
+    }
+
+    .map-status {
+      top: 6.9rem;
+    }
+
+    @media (max-width: 820px) {
+      .map-shell {
+        height: calc(100dvh - 1rem);
+      }
+
+      .brand {
+        top: 0.55rem;
+        max-width: calc(100% - 1rem);
+      }
+
+      .primary-controls {
+        left: 0.55rem;
+        right: 0.55rem;
+        top: 3.7rem;
+        max-width: none;
+        justify-content: flex-start;
+      }
+
+      .side-panel {
+        right: 0.55rem;
+        top: 8.1rem;
+      }
+
+      .map-status {
+        left: 0.55rem;
+        right: 0.55rem;
+        top: 6.35rem;
+        bottom: auto;
+        width: auto;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .map-shell {
+        height: calc(100dvh - 1rem);
+      }
+    }
   </style>
 </head>
 <body>
   <main class="app">
-    <header class="toolbar">
-      <div class="brand">
-        <strong>无尽冬日地图工具</strong>
-      </div>
-      <div class="actions" aria-label="地图操作">
-        <div class="actions-row">
-          <div class="tool-group" aria-label="主要元素">
-            <button class="btn primary element-btn" data-type="furnace" type="button">炉子</button>
-            <button class="btn element-btn" data-type="flag" type="button">旗子</button>
-            <input class="color-control" id="flagColorInput" type="color" value="#32cdff" aria-label="旗子范围颜色">
-          </div>
-        </div>
-        <div class="actions-row">
-          <div class="tool-group" aria-label="其他元素">
-            <button class="btn element-btn" data-type="bearPit" type="button">熊坑</button>
-            <button class="btn element-btn" data-type="mine" type="button">地图矿</button>
-          </div>
-          <button class="btn" id="gridBtn" type="button">隐藏标线</button>
-          <button class="btn" id="furnaceFootprintBtn" type="button">隐藏炉子占格</button>
-          <button class="btn" id="flagFootprintBtn" type="button">隐藏旗子范围</button>
-          <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
-          <button class="btn danger" id="clearBtn" type="button">清空所有建筑</button>
-        </div>
-      </div>
-    </header>
-
-    <section class="stage" aria-label="地图编辑区">
+    <section class="stage" aria-label="?????">
       <div class="map-shell" id="mapShell">
-        <svg class="map" id="mapSvg" viewBox="0 0 1000 800" role="img" aria-label="无尽冬日斜投影地图">
+        <div class="brand"><strong>????????</strong></div>
+        <div class="primary-controls" aria-label="??????">
+          <button class="btn primary element-btn" data-type="furnace" type="button">??</button>
+          <button class="btn element-btn" data-type="flag" type="button">??</button>
+          <input class="color-control" id="flagColorInput" type="color" value="#32cdff" aria-label="??????">
+        </div>
+        <div class="side-panel" id="sidePanel">
+          <button class="btn panel-toggle" id="panelToggleBtn" type="button" aria-label="??????">?</button>
+          <div class="panel-content" aria-label="????">
+            <button class="btn element-btn" data-type="bearPit" type="button">??</button>
+            <button class="btn element-btn" data-type="mine" type="button">???</button>
+            <button class="btn" id="gridBtn" type="button">????</button>
+            <button class="btn" id="furnaceFootprintBtn" type="button">??????</button>
+            <button class="btn" id="flagFootprintBtn" type="button">??????</button>
+            <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>????</button>
+            <button class="btn danger" id="clearBtn" type="button">??????</button>
+          </div>
+        </div>
+        <svg class="map" id="mapSvg" viewBox="0 0 1000 800" role="img" aria-label="?????????">
           <defs>
             <linearGradient id="iceBody" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#e4fbff"/>
@@ -633,15 +737,15 @@
           <g id="items"></g>
           <g id="previewItem"></g>
         </svg>
-        <div class="zoom-controls" aria-label="缩放地图">
-          <button class="btn zoom-btn" id="zoomOutBtn" type="button" aria-label="缩小地图">−</button>
+        <div class="zoom-controls" aria-label="????">
+          <button class="btn zoom-btn" id="zoomOutBtn" type="button" aria-label="????">?</button>
           <span class="zoom-level" id="zoomLevel">100%</span>
-          <button class="btn zoom-btn" id="zoomInBtn" type="button" aria-label="放大地图">+</button>
-          <button class="btn zoom-btn" id="zoomResetBtn" type="button" aria-label="重置地图缩放">↺</button>
+          <button class="btn zoom-btn" id="zoomInBtn" type="button" aria-label="????">+</button>
+          <button class="btn zoom-btn" id="zoomResetBtn" type="button" aria-label="??????">?</button>
         </div>
-        <div class="status map-status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
+        <div class="status map-status" id="status">?? <span class="badge">0</span> ?? <span class="badge">0</span> ?? <span class="badge">0</span></div>
         <div class="floating-hint" id="hint"></div>
-        <div class="watermark">2359大蚂蚱制作</div>
+        <div class="watermark">2359?????</div>
       </div>
     </section>
   </main>
@@ -668,6 +772,8 @@
       };
 
       const mapShell = document.getElementById("mapShell");
+      const sidePanel = document.getElementById("sidePanel");
+      const panelToggleBtn = document.getElementById("panelToggleBtn");
       const mapSvg = document.getElementById("mapSvg");
       const gridLines = document.getElementById("gridLines");
       const mapBoundary = document.getElementById("mapBoundary");
@@ -1480,7 +1586,13 @@
       });
 
       flagFootprintBtn.addEventListener("click", () => {
-        setFlagFootprintsVisible(!flagFootprintsVisible);
+        setFlagFootprintsVisible(!flagRangesVisible);
+      });
+
+      panelToggleBtn.addEventListener("click", () => {
+        const collapsed = sidePanel.classList.toggle("is-collapsed");
+        panelToggleBtn.textContent = collapsed ? "‹" : "›";
+        panelToggleBtn.setAttribute("aria-label", collapsed ? "展开功能按钮" : "收起功能按钮");
       });
 
       clearBtn.addEventListener("click", () => {
