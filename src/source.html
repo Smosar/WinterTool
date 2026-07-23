@@ -577,7 +577,8 @@
         </div>
         <input class="text-control" id="furnaceLabelInput" type="text" maxlength="8" placeholder="炉子文字" aria-label="炉子底部文字">
         <button class="btn" id="gridBtn" type="button">显示格子</button>
-        <button class="btn" id="footprintBtn" type="button">隐藏旗子占格</button>
+        <button class="btn" id="furnaceFootprintBtn" type="button">隐藏炉子占格</button>
+        <button class="btn" id="flagFootprintBtn" type="button">隐藏旗子占格</button>
         <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
         <button class="btn danger" id="clearBtn" type="button">清空</button>
         <div class="status" id="status">总数 <span class="badge">0</span> 炉子 <span class="badge">0</span> 旗子 <span class="badge">0</span></div>
@@ -658,7 +659,8 @@
       const flagColorInput = document.getElementById("flagColorInput");
       const furnaceLabelInput = document.getElementById("furnaceLabelInput");
       const gridBtn = document.getElementById("gridBtn");
-      const footprintBtn = document.getElementById("footprintBtn");
+      const furnaceFootprintBtn = document.getElementById("furnaceFootprintBtn");
+      const flagFootprintBtn = document.getElementById("flagFootprintBtn");
       const deleteSelectedBtn = document.getElementById("deleteSelectedBtn");
       const clearBtn = document.getElementById("clearBtn");
       const zoomOutBtn = document.getElementById("zoomOutBtn");
@@ -676,6 +678,7 @@
       let viewBox = initialViewBox();
       let zoom = initialZoom;
       let gridVisible = false;
+      let furnaceFootprintsVisible = true;
       let flagFootprintsVisible = true;
       let activeType = "furnace";
       let activeColor = "#32cdff";
@@ -869,9 +872,15 @@
         gridBtn.textContent = gridVisible ? "隐藏格子" : "显示格子";
       }
 
+      function setFurnaceFootprintsVisible(next) {
+        furnaceFootprintsVisible = next;
+        furnaceFootprintBtn.textContent = furnaceFootprintsVisible ? "隐藏炉子占格" : "显示炉子占格";
+        renderPlaced();
+      }
+
       function setFlagFootprintsVisible(next) {
         flagFootprintsVisible = next;
-        footprintBtn.textContent = flagFootprintsVisible ? "隐藏旗子占格" : "显示旗子占格";
+        flagFootprintBtn.textContent = flagFootprintsVisible ? "隐藏旗子占格" : "显示旗子占格";
         renderPlaced();
       }
 
@@ -1174,7 +1183,11 @@
         placed.forEach((item, index) => {
           const def = ELEMENTS[item.type];
           if (index === draggingIndex) return;
-          if (item.type !== "flag" || flagFootprintsVisible) {
+          const shouldShowFootprint =
+            (item.type === "furnace" && furnaceFootprintsVisible) ||
+            (item.type === "flag" && flagFootprintsVisible) ||
+            (item.type !== "furnace" && item.type !== "flag");
+          if (shouldShowFootprint) {
             footprintNodes.push(createSvgElement("polygon", {
               class: `footprint${item.type === "flag" ? " flag-footprint" : ""}`,
               points: rectPolygon(item.gx, item.gy, def.w, def.h)
@@ -1400,7 +1413,11 @@
         if (!placing) setGridVisible(!gridVisible);
       });
 
-      footprintBtn.addEventListener("click", () => {
+      furnaceFootprintBtn.addEventListener("click", () => {
+        setFurnaceFootprintsVisible(!furnaceFootprintsVisible);
+      });
+
+      flagFootprintBtn.addEventListener("click", () => {
         setFlagFootprintsVisible(!flagFootprintsVisible);
       });
 
@@ -1424,6 +1441,7 @@
       renderPlaced();
       applyViewBox();
       setGridVisible(false);
+      setFurnaceFootprintsVisible(true);
       setFlagFootprintsVisible(true);
     })();
   </script>
