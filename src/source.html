@@ -973,6 +973,9 @@
             <button class="btn" id="gridBtn" type="button">隐藏标线</button>
             <button class="btn" id="furnaceFootprintBtn" type="button">隐藏炉子占格</button>
             <button class="btn" id="flagFootprintBtn" type="button">隐藏旗子范围</button>
+            <button class="btn" id="exportBtn" type="button">导出方案</button>
+            <button class="btn" id="importBtn" type="button">导入方案</button>
+            <input id="importFileInput" type="file" accept="application/json,.json" hidden>
             <button class="btn danger" id="deleteSelectedBtn" type="button" disabled>删除选中</button>
             <button class="btn danger" id="clearBtn" type="button">清空所有建筑</button>
           </div>
@@ -1054,6 +1057,9 @@
       const gridBtn = document.getElementById("gridBtn");
       const furnaceFootprintBtn = document.getElementById("furnaceFootprintBtn");
       const flagFootprintBtn = document.getElementById("flagFootprintBtn");
+      const exportBtn = document.getElementById("exportBtn");
+      const importBtn = document.getElementById("importBtn");
+      const importFileInput = document.getElementById("importFileInput");
       const deleteSelectedBtn = document.getElementById("deleteSelectedBtn");
       const clearBtn = document.getElementById("clearBtn");
       const zoomOutBtn = document.getElementById("zoomOutBtn");
@@ -1092,6 +1098,8 @@
       let copiedItem = null;
       const activePointers = new Map();
       let pinchState = null;
+      const STORAGE_KEY = "winterTool.mapState.v1";
+      let saveTimer = null;
 
       function point(gx, gy) {
         return {
@@ -1250,6 +1258,7 @@
         mapSvg.setAttribute("viewBox", `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
         zoomLevel.textContent = `${Math.round(zoom * 100)}%`;
         renderVisibleGrid();
+        scheduleSave();
       }
 
       function setZoom(nextZoom, anchor = null) {
@@ -1279,18 +1288,21 @@
         mapShell.classList.toggle("grid-visible", gridVisible);
         gridBtn.textContent = gridVisible ? "隐藏标线" : "显示标线";
         renderVisibleGrid();
+        saveState();
       }
 
       function setFurnaceFootprintsVisible(next) {
         furnaceFootprintsVisible = next;
         furnaceFootprintBtn.textContent = furnaceFootprintsVisible ? "隐藏炉子占格" : "显示炉子占格";
         renderPlaced();
+        saveState();
       }
 
       function setFlagFootprintsVisible(next) {
         flagRangesVisible = next;
         flagFootprintBtn.textContent = flagRangesVisible ? "隐藏旗子范围" : "显示旗子范围";
         renderPlaced();
+        saveState();
       }
 
       function setActiveType(type) {
@@ -1300,15 +1312,113 @@
           btn.classList.toggle("primary", btn.dataset.type === type);
         });
         setPlacing(true);
+        saveState();
       }
 
       function setActiveColor(color) {
         activeColor = color;
         if (placing && activeType === "flag") drawPreview(defaultCandidate("flag"));
+        saveState();
       }
 
       function updateSelectionControls() {
         deleteSelectedBtn.disabled = selectedIndex === null || !placed[selectedIndex];
+      }
+
+      function snapshotState() {
+        return {
+          version: 1,
+          placed,
+          viewBox,
+          zoom,
+          gridVisible,
+          furnaceFootprintsVisible,
+          flagRangesVisible,
+          activeType,
+          activeColor,
+          sidePanelCollapsed: sidePanel.classList.contains("is-collapsed")
+        };
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshotState()));
+        } catch (error) {
+          console.warn("保存失败", error);
+        }
+      }
+
+      function scheduleSave() {
+        window.clearTimeout(saveTimer);
+        saveTimer = window.setTimeout(saveState, 120);
+      }
+
+      function applyState(state) {
+        if (!state || !Array.isArray(state.placed)) return false;
+        placed.splice(0, placed.length, ...state.placed.filter((item) => item && ELEMENTS[item.type]));
+        if (state.viewBox && Number.isFinite(state.viewBox.x) && Number.isFinite(state.viewBox.y) && Number.isFinite(state.viewBox.w) && Number.isFinite(state.viewBox.h)) {
+          viewBox = { x: state.viewBox.x, y: state.viewBox.y, w: state.viewBox.w, h: state.viewBox.h };
+        }
+        if (Number.isFinite(state.zoom)) zoom = clamp(state.zoom, minZoom, maxZoom);
+        gridVisible = Boolean(state.gridVisible);
+        furnaceFootprintsVisible = state.furnaceFootprintsVisible !== false;
+        flagRangesVisible = state.flagRangesVisible !== false;
+        if (state.activeType && ELEMENTS[state.activeType]) activeType = state.activeType;
+        if (typeof state.activeColor === "string") activeColor = state.activeColor;
+        flagColorInput.value = activeColor;
+        sidePanel.classList.toggle("is-collapsed", Boolean(state.sidePanelCollapsed));
+        panelToggleBtn.textContent = sidePanel.classList.contains("is-collapsed") ? "‹" : "›";
+        selectedIndex = null;
+        selectedFurnaceIndex = null;
+        editingFurnaceIndex = null;
+        updateSelectionControls();
+        elementButtons.forEach((btn) => {
+          btn.classList.toggle("primary", btn.dataset.type === activeType);
+        });
+        return true;
+      }
+
+      function loadState() {
+        try {
+          return applyState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"));
+        } catch (error) {
+          console.warn("读取存档失败", error);
+          return false;
+        }
+      }
+
+      function exportState() {
+        const data = JSON.stringify(snapshotState(), null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `winter-map-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function importState(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const state = JSON.parse(String(reader.result || ""));
+            if (!applyState(state)) throw new Error("无效方案文件");
+            renderPlaced();
+            applyViewBox();
+            mapShell.classList.toggle("grid-visible", gridVisible);
+            gridBtn.textContent = gridVisible ? "隐藏标线" : "显示标线";
+            furnaceFootprintBtn.textContent = furnaceFootprintsVisible ? "隐藏炉子占格" : "显示炉子占格";
+            flagFootprintBtn.textContent = flagRangesVisible ? "隐藏旗子范围" : "显示旗子范围";
+            saveState();
+            hint.textContent = "方案已导入。";
+          } catch (error) {
+            window.alert("导入失败，请选择有效的方案 JSON 文件。");
+          }
+          importFileInput.value = "";
+        };
+        reader.readAsText(file);
       }
 
       function clearSelection(shouldRender = true) {
@@ -1636,6 +1746,7 @@
         footprints.replaceChildren(...footprintNodes);
         items.replaceChildren(...itemNodes);
         updateStatus();
+        scheduleSave();
       }
 
       function placeAt(candidate, movingIndex = null) {
@@ -1921,6 +2032,7 @@
         const index = Number(event.target.dataset.index);
         if (placed[index]?.type !== "furnace") return;
         placed[index].label = event.target.value.trim();
+        scheduleSave();
       });
 
       mapShell.addEventListener("focusout", (event) => {
@@ -1984,6 +2096,10 @@
         setActiveColor(flagColorInput.value);
       });
 
+      exportBtn.addEventListener("click", exportState);
+      importBtn.addEventListener("click", () => importFileInput.click());
+      importFileInput.addEventListener("change", () => importState(importFileInput.files?.[0]));
+
       deleteSelectedBtn.addEventListener("click", () => {
         if (selectedIndex === null || !placed[selectedIndex]) return;
         const removed = placed[selectedIndex];
@@ -2014,6 +2130,7 @@
         const collapsed = sidePanel.classList.toggle("is-collapsed");
         panelToggleBtn.textContent = collapsed ? "‹" : "›";
         panelToggleBtn.setAttribute("aria-label", collapsed ? "展开功能按钮" : "收起功能按钮");
+        saveState();
       });
 
       clearBtn.addEventListener("click", () => {
@@ -2039,11 +2156,14 @@
       });
 
       drawMapBase();
+      loadState();
       renderPlaced();
       applyViewBox();
-      setGridVisible(false);
-      setFurnaceFootprintsVisible(true);
-      setFlagFootprintsVisible(true);
+      mapShell.classList.toggle("grid-visible", gridVisible);
+      gridBtn.textContent = gridVisible ? "隐藏标线" : "显示标线";
+      furnaceFootprintBtn.textContent = furnaceFootprintsVisible ? "隐藏炉子占格" : "显示炉子占格";
+      flagFootprintBtn.textContent = flagRangesVisible ? "隐藏旗子范围" : "显示旗子范围";
+      renderVisibleGrid();
     })();
   </script>
 </body>
