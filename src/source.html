@@ -292,11 +292,11 @@
     }
 
     .range {
-      stroke-width: 2;
-      stroke: rgba(255, 255, 255, 0.46);
+      stroke-width: 0;
+      stroke: none;
       vector-effect: non-scaling-stroke;
       pointer-events: none;
-      fill-opacity: 0.22;
+      fill-opacity: 0.14;
     }
 
     .flag-footprint {
@@ -1030,7 +1030,7 @@
       const maxZoom = mapSize / maxZoomViewSize;
 
       const ELEMENTS = {
-        furnace: { label: "炉子", w: 2, h: 2, icon: "furnace", yOffset: -15, scale: 0.58 },
+        furnace: { label: "炉子", w: 2, h: 2, icon: "furnace", yOffset: -12, scale: 0.48 },
         flag: { label: "旗子", w: 1, h: 1, icon: "flag", yOffset: -18, scale: 0.72, range: 7 },
         bearPit: { label: "熊坑", w: 3, h: 3, icon: "bearPit", yOffset: -5, scale: 0.52 },
         mine: { label: "地图矿", w: 2, h: 2, icon: "mine", yOffset: -9, scale: 0.72 }
@@ -1089,6 +1089,7 @@
       let editingFurnaceIndex = null;
       let currentCandidate = null;
       let suppressNextMapClick = false;
+      let copiedItem = null;
       const activePointers = new Map();
       let pinchState = null;
 
@@ -1670,6 +1671,52 @@
         return true;
       }
 
+      function findNearestValidCandidate(item) {
+        const def = ELEMENTS[item.type];
+        const origin = {
+          type: item.type,
+          gx: Math.min(mapSize - def.w, item.gx + def.w),
+          gy: item.gy,
+          w: def.w,
+          h: def.h
+        };
+        if (candidateIsValid(origin)) return origin;
+        const maxRadius = Math.min(mapSize, 80);
+        for (let radius = 1; radius <= maxRadius; radius += 1) {
+          for (let dy = -radius; dy <= radius; dy += 1) {
+            for (let dx = -radius; dx <= radius; dx += 1) {
+              if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+              const candidate = { type: item.type, gx: origin.gx + dx, gy: origin.gy + dy, w: def.w, h: def.h };
+              if (candidateIsValid(candidate)) return candidate;
+            }
+          }
+        }
+        return null;
+      }
+
+      function copySelectedItem() {
+        if (selectedIndex === null || !placed[selectedIndex]) return;
+        copiedItem = { ...placed[selectedIndex] };
+        hint.textContent = `已复制${ELEMENTS[copiedItem.type].label}。`;
+      }
+
+      function pasteCopiedItem() {
+        if (!copiedItem) return;
+        const candidate = findNearestValidCandidate(copiedItem);
+        if (!candidate) {
+          hint.textContent = "没有找到可粘贴的位置。";
+          return;
+        }
+        const item = { ...copiedItem, gx: candidate.gx, gy: candidate.gy };
+        placed.push(item);
+        selectedIndex = placed.length - 1;
+        selectedFurnaceIndex = item.type === "furnace" ? selectedIndex : null;
+        editingFurnaceIndex = null;
+        updateSelectionControls();
+        renderPlaced();
+        hint.textContent = `已粘贴${ELEMENTS[item.type].label}。`;
+      }
+
       function panTo(event) {
         const dx = event.clientX - panStart.x;
         const dy = event.clientY - panStart.y;
@@ -1893,6 +1940,20 @@
         event.target.blur();
       });
 
+      document.addEventListener("keydown", (event) => {
+        if (!(event.ctrlKey || event.metaKey)) return;
+        if (event.target.closest?.(".furnace-label-editor")) return;
+        const key = event.key.toLowerCase();
+        if (key === "c") {
+          copySelectedItem();
+          event.preventDefault();
+        }
+        if (key === "v") {
+          pasteCopiedItem();
+          event.preventDefault();
+        }
+      });
+
       mapShell.addEventListener("pointermove", handlePointerMove);
       mapShell.addEventListener("pointerdown", handlePointerDown);
       mapShell.addEventListener("pointerup", handlePointerUp);
@@ -1956,6 +2017,7 @@
       });
 
       clearBtn.addEventListener("click", () => {
+        if (placed.length && !window.confirm("确定要清空所有建筑吗？")) return;
         placed.splice(0, placed.length);
         selectedIndex = null;
         selectedFurnaceIndex = null;
